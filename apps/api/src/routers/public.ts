@@ -52,8 +52,6 @@ app.post('/analytics/event', async (c) => {
     const { getSupabase } = await import('@simis/kernel-graph/dist/executor/kernelExecutor');
     const supabase = getSupabase();
     
-    const geo = c.req.header('x-forwarded-for-geo') || 'US';
-    
     await supabase.from('analytics_events').insert({
       session_id: event.session_id,
       content_id: event.content_id,
@@ -68,53 +66,33 @@ app.post('/analytics/event', async (c) => {
   }
 });
 
-// POST /api/v2/public/telemetry (RT-RML v2 Bandit Feedback Loop)
+// POST /api/v2/public/telemetry (RT-RML v2.5 Bandit Feedback Loop via Queue)
 app.post('/telemetry', async (c) => {
   try {
-    const { RTMMTelemetryEvent } = await import('../services/rt-rml/types');
-    const { FraudFilter } = await import('../services/rt-rml/fraud-filter');
-    const { BanditEngine } = await import('../services/rt-rml/bandit_engine');
-    
+    const { TelemetryProducer } = await import('../services/rt-rml/queue/telemetry-producer');
     const body = await c.req.json();
     
-    // 1. Validation & Fraud Check
-    const validationFactor = FraudFilter.validateTelemetry({
-      clicksPerMinute: body.engagement?.ctr > 0 ? 1 : 0, // Placeholder for actual velocity
-      avgDwellMs: body.engagement?.dwell_ms || 0,
-      scrollEntropy: body.engagement?.scroll_pct || 0,
-      clicked: body.engagement?.ctr > 0
-    });
-
-    if (validationFactor === FraudFilter.BLACKHOLE_SESSION) {
-      return c.json({ success: true, ignored: true }); // Silent drop
-    }
-
-    // Apply penalty to reward if detected
-    const reward = {
-      ctr: body.engagement?.ctr || 0,
-      dwell_time: body.engagement?.dwell_ms || 0,
-      scroll_depth: body.engagement?.scroll_pct || 0,
-      conversion: body.engagement?.conversion || false,
-      rpm: body.revenue?.usd || 0
+    // Convert incoming request to TelemetryEvent format
+    const event = {
+      session_id: body.session_id || 'anon',
+      content_id: body.content_id || 'unknown',
+      context: body.context,
+      action: body.action || { type: "CONTENT_ONLY", position: "inline" },
+      reward: {
+        ctr: body.engagement?.ctr || 0,
+        dwell_time: body.engagement?.dwell_ms || 0,
+        scroll_depth: body.engagement?.scroll_pct || 0,
+        conversion: body.engagement?.conversion || false,
+        rpm: body.revenue?.usd || 0
+      }
     };
 
-    if (validationFactor === FraudFilter.PENALTY || validationFactor === FraudFilter.REWARD_ZERO) {
-      reward.rpm = 0;
-      reward.conversion = false;
-      reward.ctr = 0;
-    }
+    // Publish to Redis Stream for async worker processing
+    await TelemetryProducer.emit(event);
 
-    // 2. Reconstruct Context & Action
-    const context = body.context;
-    // We assume the client sends back the action type it observed, or we deduce it
-    const action = body.action || { type: "CONTENT_ONLY", position: "inline" };
-
-    // 3. Update Bandit
-    await BanditEngine.update(context, action, reward);
-
-    return c.json({ success: true });
+    return c.json({ success: true, queued: true });
   } catch (err: any) {
-    console.error("[TELEMETRY] Bandit update failed", err);
+    console.error("[TELEMETRY] Bandit stream publish failed", err);
     return c.json({ error: err.message }, 500);
   }
 });

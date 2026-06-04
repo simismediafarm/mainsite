@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { adminStyles } from '../cms/page';
+import { adminStyles } from '../adminStyles';
 
 export default function ObservabilityMonitorView() {
   const [logs, setLogs] = useState<any[]>([]);

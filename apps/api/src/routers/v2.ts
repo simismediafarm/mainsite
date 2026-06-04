@@ -44,19 +44,21 @@ v2Router.get('/feed', async (c) => {
     // 4. Kernel Arbitration & Lock Enforcement (Deterministic scoring)
     const finalFeed = await RankingArbitrationKernel.arbitrate(resolvedFeed, sessionId);
 
-    // 5. RT-RML v2: Bandit Execution (Dynamic Monetization overriding)
-    const { RTMMEngine } = await import('../services/rt-rml/rtmm-engine');
-    const { ContextVector } = await import('../services/rt-rml/types');
+    // 5. RT-RML v2.5: Bandit Execution (Dynamic Monetization overriding)
+    const { RTMMOrchestrator } = await import('../services/rt-rml/core/rtmm-orchestrator');
     
     // Construct ContextVector for the bandit
     const context = {
       geo,
       device: device as "mobile" | "desktop",
       category: "general", // We could infer this from user behavior later
-      session_depth: 1
+      time_bucket: "latest" // Just an example
     };
     
-    const marketReadyFeed = await RTMMEngine.applyToFeed(finalFeed, context);
+    const marketReadyFeed = finalFeed.map((item) => ({
+      ...item,
+      monetization: RTMMOrchestrator.resolve(context)
+    }));
 
     return c.json({ items: marketReadyFeed });
   } catch (err: any) {

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { adminStyles } from '../cms/page';
+import { adminStyles } from '../adminStyles';
 
 export default function IngestionQueuesView() {
   const [sources, setSources] = useState([

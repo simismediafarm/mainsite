@@ -49,7 +49,7 @@ export default function CmsCurationView() {
   );
 }
 
-export const adminStyles: Record<string, React.CSSProperties> = {
+const adminStyles: Record<string, React.CSSProperties> = {
   container: {
     padding: '48px',
     color: 'var(--text-primary)',

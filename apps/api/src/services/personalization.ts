@@ -112,7 +112,7 @@ export async function getPersonalizedFeed(userId: string | null, limit = 10): Pr
   // Boost score based on user tag affinity
   if (preferredTags.length > 0) {
     items.forEach(item => {
-      const commonTags = item.metadata.tags.filter(t => preferredTags.includes(t));
+      const commonTags = item.metadata.tags.filter((t: string) => preferredTags.includes(t));
       if (commonTags.length > 0) {
         // Boost final score by 15% per matching tag (capped at 50% max boost)
         const boost = Math.min(0.50, commonTags.length * 0.15);

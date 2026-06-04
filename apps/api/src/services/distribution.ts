@@ -10,7 +10,7 @@ import { ContentBlockV2 } from './block_builder';
 export async function syndicateContent(content: ContentBlockV2): Promise<void> {
   const domain = process.env.AFFILIATE_CUSTOM_TRACKING_DOMAIN ?? 'https://simis-media.com';
   const url = `${domain}/read/${content.slug}`;
-  const message = `📢 *New Article Published!* \n\n*${content.title}*\nCategory: ${content.metadata.category}\nTags: ${content.metadata.tags.map(t => `#${t}`).join(' ')}\n\nRead here: ${url}`;
+  const message = `📢 *New Article Published!* \n\n*${content.title}*\nCategory: ${content.metadata.category}\nTags: ${content.metadata.tags.map((t: string) => `#${t}`).join(' ')}\n\nRead here: ${url}`;
 
   // 1. Telegram Ingestion
   const tgToken = process.env.TELEGRAM_BOT_TOKEN;

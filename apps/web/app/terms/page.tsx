@@ -1,5 +1,5 @@
 import React from 'react';
-import { legalStyles } from '../privacy/page';
+import { legalStyles } from '../legalStyles';
 
 export default function TermsPage() {
   return (

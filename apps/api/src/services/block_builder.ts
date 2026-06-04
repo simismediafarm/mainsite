@@ -35,6 +35,7 @@ export interface ContentBlockV2 {
     meta_description: string;
     schema_type: "Article" | "Product" | "Review" | "ItemPage";
   };
+  metadata: Record<string, any>;
   monetization: {
     rules: {
        when: string;
@@ -43,6 +44,7 @@ export interface ContentBlockV2 {
     }[];
   };
   ranking: {
+    score: number;
     base_score: number;
     engagement_score: number;
     seo_score: number;
@@ -118,10 +120,12 @@ export function buildContentBlock(row: any): ContentBlockV2 {
       meta_description: row.seo?.meta_description ?? '',
       schema_type: row.seo?.schema_type ?? 'Article'
     },
+    metadata: row.metadata ?? {},
     monetization: {
       rules: row.monetization?.rules ?? []
     },
     ranking: {
+      score: Number(row.ranking?.score ?? 0),
       base_score: Number(row.ranking?.base_score ?? 0),
       engagement_score: Number(row.ranking?.engagement_score ?? 0),
       seo_score: Number(row.ranking?.seo_score ?? 0),

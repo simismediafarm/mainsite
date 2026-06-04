@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { adminStyles } from '../cms/page';
+import { adminStyles } from '../adminStyles';
 import { API_BASE } from '../../../lib/kernel-api';
 
 export default function MonetizationPanel() {
