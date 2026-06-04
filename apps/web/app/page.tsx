@@ -51,8 +51,25 @@ export default function HomePage() {
   const dealsItems = feedItems.filter(item => item.type === 'affiliate');
   const streamItems = feedItems.slice(1);
 
+  const jsonLdCollection = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'SIMIS Media Home Feed',
+    description: 'Curated programmatic media feed and hot deals.',
+    url: 'https://mediafarm.vercel.app',
+    hasPart: feedItems.map(item => ({
+      '@type': 'Article',
+      headline: item.title,
+      url: `https://mediafarm.vercel.app/read/${item.slug}`
+    }))
+  };
+
   return (
     <div style={homeStyles.container}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdCollection) }}
+      />
       {/* ── Section A: Hero Stream (Featured Review / Story) ────────────────── */}
       {heroItem && (
         <section style={homeStyles.heroSection}>

@@ -46,6 +46,31 @@ export default function DealsPage() {
         <h1 style={dealsStyles.title}>🛍️ Hot Affiliate Deals</h1>
         <p style={dealsStyles.sub}>Scraped price drops and tracking coupons updated hourly.</p>
       </header>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: 'SIMIS Hot Deals',
+            itemListElement: products.map((p, index) => ({
+              '@type': 'ListItem',
+              position: index + 1,
+              item: {
+                '@type': 'Product',
+                name: p.title,
+                url: p.url,
+                offers: {
+                  '@type': 'Offer',
+                  price: p.price,
+                  priceCurrency: 'USD',
+                  availability: p.availability ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'
+                }
+              }
+            }))
+          })
+        }}
+      />
 
       {loading ? (
         <p>Loading active deals feed...</p>

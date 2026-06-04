@@ -58,8 +58,31 @@ export default function ArticlePage() {
   if (loading) return <p>Loading article content...</p>;
   if (!content) return <p>Article not found.</p>;
 
+  const jsonLdArticle = {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: content.title,
+    datePublished: content.metadata.created_at,
+    author: {
+      '@type': 'Person',
+      name: content.metadata.author
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'SIMIS Media',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://mediafarm.vercel.app/logo.png'
+      }
+    }
+  };
+
   return (
     <div style={articleStyles.container}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdArticle) }}
+      />
       <article style={articleStyles.article}>
         {/* Article Header */}
         <header style={articleStyles.header}>

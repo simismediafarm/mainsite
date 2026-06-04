@@ -38,6 +38,9 @@ importers:
       '@simis/kernel-graph':
         specifier: workspace:*
         version: link:../../packages/kernel-graph
+      '@simis/reasoning-graph':
+        specifier: workspace:*
+        version: link:../../packages/reasoning-graph
       '@supabase/supabase-js':
         specifier: ^2.43.0
         version: 2.107.0

@@ -9,6 +9,35 @@ import Link from 'next/link';
 export const metadata = {
   title: 'SIMIS Media Platform — Programmatic AGC & affiliate network',
   description: 'Curated shopping comparisons, automated hot deals, and tech & finance reviews.',
+  openGraph: {
+    title: 'SIMIS Media Platform',
+    description: 'Curated shopping comparisons and automated hot deals.',
+    url: 'https://mediafarm.vercel.app',
+    siteName: 'SIMIS Media',
+    images: [{ url: '/logo.png', width: 800, height: 600 }],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'SIMIS Media Platform',
+    description: 'Curated shopping comparisons and automated hot deals.',
+    images: ['/logo.png'],
+  },
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/logo.png',
+  },
+};
+
+const jsonLdOrg = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'SIMIS Media',
+  url: 'https://mediafarm.vercel.app',
+  logo: 'https://mediafarm.vercel.app/logo.png',
+  sameAs: ['https://twitter.com/simismedia']
 };
 
 export default function RootLayout({
@@ -19,6 +48,10 @@ export default function RootLayout({
   return (
     <html lang="en" data-theme="light">
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdOrg) }}
+        />
         <div style={layoutStyles.container}>
           {/* Global Navigation Header */}
           <header style={layoutStyles.header}>
