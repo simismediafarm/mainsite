@@ -1,0 +1,21 @@
+{
+  "name": "@simis/deploy-kernel",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.43.0",
+    "@simis/config": "workspace:*",
+    "@simis/kernel-graph": "workspace:*",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5"
+  }
+}

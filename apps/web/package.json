@@ -1,0 +1,27 @@
+{
+  "name": "@simis/web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.1.0",
+    "@supabase/supabase-js": "^2.43.0",
+    "@xyflow/react": "^12.0.0",
+    "next": "^15.0.0",
+    "react": "^19.0.0-rc",
+    "react-dom": "^19.0.0-rc",
+    "recharts": "^2.12.0",
+    "swr": "^2.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^6.0.3"
+  }
+}

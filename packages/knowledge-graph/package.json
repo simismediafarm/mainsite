@@ -1,0 +1,23 @@
+{
+  "name": "@simis/knowledge-graph",
+  "version": "1.0.0",
+  "description": "Deterministic World Model Compiler for SIMIS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@simis/kernel-graph": "workspace:*",
+    "@langchain/core": "^1.1.48",
+    "@langchain/google-genai": "^0.0.18"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}

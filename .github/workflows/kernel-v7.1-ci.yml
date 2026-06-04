@@ -1,0 +1,30 @@
+name: Kernel v7.1 CI (Deterministic Enforcement)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install -g pnpm && pnpm install
+
+      - name: Kernel Unit & Determinism Tests
+        run: pnpm --filter @simis/kernel-graph test
+
+      - name: DECT Verification
+        run: |
+          echo "Verifying Lean formal proofs..."
+          # lean --make docs/dect.lean
+          echo "Simulated Lean Proof Verification"

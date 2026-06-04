@@ -1,0 +1,105 @@
+{
+  "__inputs": [],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.0.0"
+    }
+  ],
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "title": "EXECUTION PIPELINE FLOW",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "execution_pipeline_latency_ms{step=\"crawl.fetch_time\"}",
+          "legendFormat": "Crawl Fetch"
+        },
+        {
+          "expr": "execution_pipeline_latency_ms{step=\"parser.normalize_time\"}",
+          "legendFormat": "Parser Normalize"
+        },
+        {
+          "expr": "execution_pipeline_latency_ms{step=\"signal.generate_time\"}",
+          "legendFormat": "Signal Generate"
+        },
+        {
+          "expr": "execution_pipeline_latency_ms{step=\"decision.execute_time\"}",
+          "legendFormat": "Decision Execute"
+        }
+      ]
+    },
+    {
+      "title": "IO BUFFER STATE",
+      "type": "gauge",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "io_buffer_intents{state=\"pending\"}", "legendFormat": "Pending" },
+        { "expr": "io_buffer_intents{state=\"executing\"}", "legendFormat": "Executing" },
+        { "expr": "io_buffer_intents{state=\"deferred\"}", "legendFormat": "Deferred" },
+        { "expr": "io_buffer_intents{state=\"dlq\"}", "legendFormat": "DLQ" }
+      ]
+    },
+    {
+      "title": "SIGNAL ENGINE HEALTH",
+      "type": "histogram",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, rate(signal_score_distribution_bucket[5m]))" }
+      ]
+    },
+    {
+      "title": "DECISION NODE OUTPUTS",
+      "type": "piechart",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "sum(decision_outputs_total) by (decision)", "legendFormat": "{{decision}}" }
+      ]
+    },
+    {
+      "title": "POE VALIDATION STREAM",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "sum(poe_validations_total{status=\"valid\"}) / sum(poe_validations_total)", "legendFormat": "Validity Ratio" }
+      ]
+    },
+    {
+      "title": "CRAWLER THROUGHPUT (LIVE vs REPLAY)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "rate(crawler_jobs_total{worker=\"fly\"}[1m])", "legendFormat": "Fly Worker (LIVE)" },
+        { "expr": "rate(crawler_jobs_total{worker=\"docker\"}[1m])", "legendFormat": "Docker Worker (REPLAY)" }
+      ]
+    }
+  ],
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["simis", "kernel"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "SIMIS Execution Dashboard (IAC v1.0)",
+  "uid": "simis-obs-1",
+  "version": 1
+}

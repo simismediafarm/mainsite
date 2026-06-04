@@ -1,0 +1,39 @@
+{
+  "name": "@simis/kernel-graph",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./types.js": "./dist/v7.1/types.js",
+    "./v7.2.1/ecvm/io_buffer.js": "./dist/v7.2.1/ecvm/io_buffer.js",
+    "./dist/executor/kernelExecutor": "./dist/executor/kernelExecutor.js",
+    "./dist/v7.1/runtime/execution_pipeline": "./dist/v7.1/runtime/execution_pipeline.js",
+    "./dist/v7.1/runtime/execution_pipeline.js": "./dist/v7.1/runtime/execution_pipeline.js",
+    "./dist/v7.1/runtime/replay": "./dist/v7.1/runtime/replay.js",
+    "./dist/v7.1/runtime/kernel_stream_bridge.js": "./dist/v7.1/runtime/kernel_stream_bridge.js",
+    "./dist/v7.2.1/ecvm/io_buffer": "./dist/v7.2.1/ecvm/io_buffer.js",
+    "./dist/v7.2.1/ecvm/io_buffer.js": "./dist/v7.2.1/ecvm/io_buffer.js",
+    "./dist/v7.2.1/ecvm/sandbox": "./dist/v7.2.1/ecvm/sandbox.js",
+    "./dist/v7.3/verification/poe_guard": "./dist/v7.3/verification/poe_guard.js",
+    "./dist/v7.3/verification/poe_guard.js": "./dist/v7.3/verification/poe_guard.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w"
+  },
+  "dependencies": {
+    "@langchain/langgraph": "^1.3.4",
+    "@simis/config": "workspace:*",
+    "@supabase/supabase-js": "^2.43.0",
+    "@upstash/redis": "^1.31.0",
+    "dotenv": "^16.4.5",
+    "jsonwebtoken": "^9.0.3"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5"
+  }
+}

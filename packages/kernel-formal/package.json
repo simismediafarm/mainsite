@@ -1,0 +1,21 @@
+{
+  "name": "@simis/kernel-formal",
+  "version": "1.0.0",
+  "description": "Formal Verification Layer for SIMIS Execution Traces",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@simis/kernel-graph": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}

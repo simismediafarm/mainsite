@@ -1,0 +1,23 @@
+{
+  "name": "@simis/ops",
+  "version": "1.0.0",
+  "description": "SIMIS Operational Scripts & Observability Hooks (IAC v1.0 Frozen)",
+  "type": "module",
+  "scripts": {
+    "run:live": "tsx live_run.ts"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.4.1",
+    "posthog-node": "^3.1.1",
+    "dotenv": "^16.0.0",
+    "@simis/kernel-graph": "workspace:*",
+    "@simis/crawler-mesh": "workspace:*",
+    "@simis/signal-engine": "workspace:*",
+    "@simis/reasoning-engine": "workspace:*",
+    "@simis/publishing-engine": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@simis/config",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/resolver.js",
+  "types": "dist/resolver.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.43.0",
+    "@upstash/redis": "^1.31.0",
+    "dotenv": "^16.4.5",
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.202",
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5"
+  }
+}

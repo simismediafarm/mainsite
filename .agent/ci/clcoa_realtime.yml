@@ -1,0 +1,26 @@
+name: CLCOA Real-Time Ground Truth Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run Ground Truth Audit
+        run: pnpm run clcoa:run
+
+      - name: Block if drift detected
+        run: |
+          if [ -f .agent/output/UNGROUNDED.json ]; then
+            echo "CLCOA VIOLATION: SYSTEM NOT GROUNDED"
+            exit 1
+          fi

@@ -1,0 +1,126 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+:root {
+  /* Harmony HSL Tailored Colors */
+  --primary-hue: 250;
+  --primary-saturation: 85%;
+  --primary-lightness: 58%;
+
+  --primary: hsl(var(--primary-hue), var(--primary-saturation), var(--primary-lightness));
+  --primary-hover: hsl(var(--primary-hue), var(--primary-saturation), calc(var(--primary-lightness) - 8%));
+  --primary-glow: hsla(var(--primary-hue), var(--primary-saturation), var(--primary-lightness), 0.15);
+
+  --background: hsl(220, 25%, 97%);
+  --surface: hsl(0, 0%, 100%);
+  --surface-border: hsl(220, 15%, 90%);
+  --text-primary: hsl(224, 40%, 15%);
+  --text-secondary: hsl(220, 15%, 45%);
+
+  --deal-green: hsl(142, 70%, 45%);
+  --deal-badge-bg: hsl(142, 70%, 95%);
+  
+  --font-heading: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 16px 40px rgba(10, 10, 30, 0.08);
+
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="dark"] {
+  --background: hsl(224, 25%, 8%);
+  --surface: hsl(224, 25%, 12%);
+  --surface-border: hsl(224, 20%, 18%);
+  --text-primary: hsl(210, 40%, 98%);
+  --text-secondary: hsl(215, 15%, 75%);
+
+  --deal-badge-bg: hsla(142, 70%, 45%, 0.15);
+  
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.6;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Glassmorphism Container Classes */
+.glass-container {
+  background: hsla(0, 0%, 100%, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="dark"] .glass-container {
+  background: hsla(224, 25%, 12%, 0.7);
+}
+
+/* Premium micro-interactions & hovers */
+.hover-lift {
+  transition: var(--transition-smooth);
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.interactive-glow:hover {
+  box-shadow: 0 0 20px var(--primary-glow);
+  border-color: var(--primary);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}

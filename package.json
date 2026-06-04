@@ -1,0 +1,23 @@
+{
+  "name": "simis-monorepo",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "audit": "tsx .agent/audit/run_global_audit.ts",
+    "audit:ci": "pnpm run audit",
+    "clcoa:run": "tsx .agent/cognition/run_clcoa_realtime.ts",
+    "clcoa:ground-truth": "pnpm run clcoa:run"
+  },
+  "devDependencies": {
+    "@babel/parser": "^7.29.7",
+    "@babel/traverse": "^7.29.7",
+    "@supabase/supabase-js": "^2.43.0",
+    "@types/babel__traverse": "^7.28.0",
+    "fast-glob": "^3.3.3",
+    "tsx": "^4.22.4",
+    "turbo": "^2.0.0"
+  },
+  "packageManager": "pnpm@9.1.0"
+}

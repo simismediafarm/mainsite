@@ -1,0 +1,20 @@
+{
+  "name": "@simis/ai-client",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/router.js",
+  "types": "dist/router.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.43.0",
+    "@simis/config": "workspace:*",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5"
+  }
+}

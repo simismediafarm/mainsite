@@ -1,0 +1,21 @@
+{
+  "name": "@simis/kernel-theorem",
+  "version": "1.0.0",
+  "description": "Theorem-Gated Runtime for SIMIS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@simis/kernel-formal": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}

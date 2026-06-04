@@ -1,0 +1,21 @@
+{
+  "name": "@simis/crawler-mesh",
+  "version": "1.0.0",
+  "description": "Deterministic Hybrid Crawler Mesh for SIMIS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "@simis/kernel-graph": "workspace:*",
+    "@simis/kernel-chaos": "workspace:*",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}
