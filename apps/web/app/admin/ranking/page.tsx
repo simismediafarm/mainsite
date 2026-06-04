@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { adminStyles } from '../adminStyles';
 import { API_BASE } from '../../../lib/kernel-api';
 
@@ -11,6 +11,15 @@ export default function RankingConfigurationsView() {
     ctr: 1.0,
     monetization: 1.0
   });
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/v2/admin/ranking/weights`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.weights) setWeights(data.weights);
+      })
+      .catch(console.error);
+  }, []);
 
   const handleSave = () => {
     fetch(`${API_BASE}/api/v2/admin/ranking/weights`, {

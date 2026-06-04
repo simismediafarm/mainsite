@@ -13,6 +13,7 @@
     "@langchain/google-genai": "^0.0.18",
     "@langchain/langgraph": "^1.3.4",
     "@simis/config": "workspace:*",
+    "@simis/kernel-graph": "workspace:^",
     "@supabase/supabase-js": "^2.43.0",
     "dotenv": "^16.4.5"
   },

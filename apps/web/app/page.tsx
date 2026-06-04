@@ -32,12 +32,19 @@ export default async function HomePage() {
     const res = await fetch(`${API_BASE}/api/v2/feed?limit=15`, { next: { revalidate: 60 } });
     if (res.ok) {
       const data = await res.json();
-      feedItems = data.items || MOCK_FEED_ITEMS;
-    } else {
-      feedItems = MOCK_FEED_ITEMS;
+      feedItems = data.items || [];
     }
   } catch (err) {
-    feedItems = MOCK_FEED_ITEMS;
+    feedItems = [];
+  }
+
+  if (feedItems.length === 0) {
+    return (
+      <div style={{ ...homeStyles.container, padding: '80px 20px', textAlign: 'center' }}>
+        <h1 style={homeStyles.sectionTitle}>📰 Welcome to SIMIS</h1>
+        <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>Our programmatic feed is currently synchronizing. Please check back shortly.</p>
+      </div>
+    );
   }
 
   const heroItem = feedItems[0];
@@ -78,45 +85,49 @@ export default async function HomePage() {
       )}
 
       {/* ── Section B: Deals Strip (Monetization Injection Point) ───────────── */}
-      <section style={homeStyles.dealsSection}>
-        <div style={homeStyles.sectionHeader}>
-          <h2 style={homeStyles.sectionTitle}>💰 Hot Deals Strip</h2>
-          <span style={homeStyles.sectionSub}>Content-Egg direct affiliate tracking</span>
-        </div>
-        <div style={homeStyles.dealsTrack}>
-          {dealsItems.map(deal => (
-            <div key={deal.id} className="glass-container hover-lift" style={homeStyles.dealCard}>
-              <div style={homeStyles.discountBadge}>-25% Price Drop</div>
-              <h3 style={homeStyles.dealTitle}>{deal.title}</h3>
-              <p style={homeStyles.dealPrice}>$299.00 <span style={homeStyles.strike}>$399.00</span></p>
-              <a href={`/read/${deal.slug}`} style={homeStyles.dealBtn}>Get Tracking Link</a>
-            </div>
-          ))}
-        </div>
-      </section>
+      {dealsItems.length > 0 && (
+        <section style={homeStyles.dealsSection}>
+          <div style={homeStyles.sectionHeader}>
+            <h2 style={homeStyles.sectionTitle}>💰 Hot Deals Strip</h2>
+            <span style={homeStyles.sectionSub}>Content-Egg direct affiliate tracking</span>
+          </div>
+          <div style={homeStyles.dealsTrack}>
+            {dealsItems.map(deal => (
+              <div key={deal.id} className="glass-container hover-lift" style={homeStyles.dealCard}>
+                <div style={homeStyles.discountBadge}>-25% Price Drop</div>
+                <h3 style={homeStyles.dealTitle}>{deal.title}</h3>
+                <p style={homeStyles.dealPrice}>$299.00 <span style={homeStyles.strike}>$399.00</span></p>
+                <a href={`/read/${deal.slug}`} style={homeStyles.dealBtn}>Get Tracking Link</a>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Section C: Main Ranked Stream (Infinite Content Stream) ─────────── */}
-      <section style={homeStyles.streamSection}>
-        <h2 style={homeStyles.sectionTitle}>📰 Discovery Stream</h2>
-        <div style={homeStyles.feedGrid}>
-          {streamItems.map(item => (
-            <article key={item.id} className="glass-container hover-lift" style={homeStyles.articleCard}>
-              <div style={homeStyles.cardHeader}>
-                <span style={homeStyles.category}>{item.metadata.category}</span>
-                <span style={homeStyles.scoreBadge}>CTR Score: {item.ranking.score.toFixed(2)}</span>
-              </div>
-              <h3 style={homeStyles.cardTitle}>{item.title}</h3>
-              <p style={homeStyles.cardSnippet}>
-                Explore automated specs, price comparison grids, and dynamic scoring indexes.
-              </p>
-              <div style={homeStyles.cardFooter}>
-                <a href={`/read/${item.slug}`} style={homeStyles.cardLink}>Read Article ➔</a>
-                <span style={homeStyles.typeBadge}>{item.type}</span>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+      {streamItems.length > 0 && (
+        <section style={homeStyles.streamSection}>
+          <h2 style={homeStyles.sectionTitle}>📰 Discovery Stream</h2>
+          <div style={homeStyles.feedGrid}>
+            {streamItems.map(item => (
+              <article key={item.id} className="glass-container hover-lift" style={homeStyles.articleCard}>
+                <div style={homeStyles.cardHeader}>
+                  <span style={homeStyles.category}>{item.metadata.category}</span>
+                  <span style={homeStyles.scoreBadge}>CTR Score: {item.ranking.score.toFixed(2)}</span>
+                </div>
+                <h3 style={homeStyles.cardTitle}>{item.title}</h3>
+                <p style={homeStyles.cardSnippet}>
+                  Explore automated specs, price comparison grids, and dynamic scoring indexes.
+                </p>
+                <div style={homeStyles.cardFooter}>
+                  <a href={`/read/${item.slug}`} style={homeStyles.cardLink}>Read Article ➔</a>
+                  <span style={homeStyles.typeBadge}>{item.type}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Pre-reserved Ad Slot (Prevents Layout Shift) ──────────────────── */}
       <div style={homeStyles.adSlot}>
@@ -128,46 +139,6 @@ export default async function HomePage() {
     </div>
   );
 }
-
-// Offline Safe fallback data to keep UI visually stunning out-of-the-box
-const MOCK_FEED_ITEMS: ContentBlockV2[] = [
-  {
-    id: "1",
-    type: "article",
-    title: "Best Noise Cancelling Headphones of 2026: Sony vs Bose vs Apple",
-    slug: "best-noise-cancelling-headphones-2026",
-    blocks: [],
-    metadata: { category: "Tech", tags: ["audio", "sony", "headphones"], author: "AGC Writer", created_at: new Date().toISOString() },
-    ranking: { score: 0.95, monetization_weight: 0.8 }
-  },
-  {
-    id: "2",
-    type: "affiliate",
-    title: "Sony WH-1000XM6 Wireless Headphones (Amazon Direct Link)",
-    slug: "sony-wh-1000xm6-deal",
-    blocks: [],
-    metadata: { category: "Deals", tags: ["amazon", "sony", "affiliate"], author: "Scraper Bot", created_at: new Date().toISOString() },
-    ranking: { score: 0.88, monetization_weight: 0.9 }
-  },
-  {
-    id: "3",
-    type: "comparison",
-    title: "Sony WH-1000XM6 vs Bose QuietComfort Ultra Comparison Matrix",
-    slug: "sony-xm6-vs-bose-ultra",
-    blocks: [],
-    metadata: { category: "Compare", tags: ["sony", "bose", "comparison"], author: "Reasoning Engine", created_at: new Date().toISOString() },
-    ranking: { score: 0.84, monetization_weight: 0.7 }
-  },
-  {
-    id: "4",
-    type: "article",
-    title: "How to Optimize Your Personal Finance Strategy with High-Yield Savings Accounts",
-    slug: "finance-savings-account-guide",
-    blocks: [],
-    metadata: { category: "Finance", tags: ["savings", "banking", "finance"], author: "AGC Writer", created_at: new Date().toISOString() },
-    ranking: { score: 0.78, monetization_weight: 0.5 }
-  }
-];
 
 const homeStyles: Record<string, React.CSSProperties> = {
   container: {

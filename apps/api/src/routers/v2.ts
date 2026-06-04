@@ -3,7 +3,6 @@
  */
 
 import { Hono } from 'hono';
-import crypto from 'crypto';
 import { getSupabase } from '@simis/kernel-graph/dist/executor/kernelExecutor';
 import { runExecutionPipeline, PipelineIntent } from '@simis/kernel-graph/dist/v7.1/runtime/execution_pipeline';
 import { buildContentBlock, ContentBlockV2 } from '../services/block_builder';
@@ -18,7 +17,17 @@ import { RankingArbitrationKernel } from '../services/ranking_arbitration';
 import { MonetizationPlacementResolver } from '../services/monetization_dsl';
 import { SEOContentSafetyEngine } from '../services/seo_safety';
 
+// SEO Engines
+import { GooglebotEmulator } from '../services/seo/googlebot_emulator';
+import { SERPPredictor } from '../services/seo/serp_predictor';
+import { IndexabilityEngine } from '../services/seo/indexability_engine';
+import { DiscoverEligibilityEngine } from '../services/seo/discover_eligibility_engine';
+import { LinkGraphEngine } from '../services/seo/link_graph_engine';
+import { CannibalizationDetector } from '../services/seo/cannibalization_detector';
+import { IndexingClient } from '../services/seo/indexing_client';
+
 const v2Router = new Hono();
+
 
 // ── Rate Limiting for Ingestion ──────────────────────────────────────────────
 const ingestRateLimit = rateLimit(10, 60 * 1000); // Max 10 ingests per minute
@@ -44,8 +53,7 @@ v2Router.get('/feed', async (c) => {
     // 4. Kernel Arbitration & Lock Enforcement (Deterministic scoring)
     const finalFeed = await RankingArbitrationKernel.arbitrate(resolvedFeed, sessionId);
 
-    // 5. RT-RML v2.5: Bandit Execution (Dynamic Monetization overriding)
-    const { RTMMOrchestrator } = await import('../services/rt-rml/core/rtmm-orchestrator');
+    // 5. RT-RML v2.5: Bandit Execution Context setup
     
     // Construct ContextVector for the bandit
     const context = {
@@ -55,7 +63,21 @@ v2Router.get('/feed', async (c) => {
       time_bucket: "latest" // Just an example
     };
     
-    const marketReadyFeed = finalFeed.map((item) => ({
+    const scrollDepth = parseInt(c.req.query('scroll_depth') || '0');
+    const dwellTime = parseInt(c.req.query('dwell_time') || '0');
+
+    // 5. Server-side dynamic monetization reflow
+    const { MonetizationReflowEngine } = await import('../services/revenue-engine/monetization-reflow');
+    const reflowedFeed = MonetizationReflowEngine.reflow(finalFeed, {
+      geo,
+      device: device as "mobile" | "desktop",
+      scroll_depth: scrollDepth,
+      dwell_time_seconds: dwellTime
+    });
+
+    // 6. RT-RML v2.5: Bandit Execution (Dynamic Monetization overriding)
+    const { RTMMOrchestrator } = await import('../services/rt-rml/core/rtmm-orchestrator');
+    const marketReadyFeed = reflowedFeed.map((item) => ({
       ...item,
       monetization: RTMMOrchestrator.resolve(context)
     }));
@@ -214,8 +236,7 @@ v2Router.post('/ingest', ingestRateLimit, async (c) => {
   } catch {
     return c.json({ error: 'Invalid JSON payload' }, 400);
   }
-
-  const intentId = crypto.randomUUID();
+  const intentId = globalThis.crypto.randomUUID();
 
   // 1. Run Ingestion compliance gate check
   const compliance = validateContentCompliance(body);
@@ -279,6 +300,20 @@ v2Router.post('/ingest', ingestRateLimit, async (c) => {
 
       // Save structured record into Postgres media store
       const supabase = getSupabase();
+
+      // Retrieve existing content pool for similarity check
+      const { data: poolData } = await supabase.from('content_blocks_v2').select('*').limit(200);
+      const existingPool = (poolData || []).map(buildContentBlock);
+
+      // SEO Prediction & Simulation
+      const crawlSimulation = GooglebotEmulator.simulate(precompiledBlock);
+      const serpReport = SERPPredictor.predict(precompiledBlock, crawlSimulation);
+      const discoverReport = DiscoverEligibilityEngine.evaluate(precompiledBlock);
+      const cannibalizationReport = CannibalizationDetector.evaluate(precompiledBlock, existingPool);
+
+      // Autonomous growth safeguards: force staged status on keyword cannibalization or if not explicitly bypassable
+      const finalStatus = (body.publish_now && !cannibalizationReport.isConflict) ? 'published' : 'staged';
+
       const dbPayload = {
         id: intentId,
         organization_id: body.organization_id || '00000000-0000-0000-0000-000000000000',
@@ -289,7 +324,14 @@ v2Router.post('/ingest', ingestRateLimit, async (c) => {
         metadata: {
           ...payload.metadata,
           source_type: 'kernel',
-          author: payload.metadata.author ?? 'system'
+          author: payload.metadata.author ?? 'system',
+          seo_prediction: {
+            serp_score: serpReport.serpScore,
+            discover_score: serpReport.discoverEligibility,
+            discover_eligible: discoverReport.isEligible,
+            crawl_depth: crawlSimulation.depth,
+            cannibalization_risk: cannibalizationReport.isConflict
+          }
         },
         ranking: {
           score: rankingScore,
@@ -304,11 +346,22 @@ v2Router.post('/ingest', ingestRateLimit, async (c) => {
           poe_hash: result.poe.execution_hash,
           io_buffer_id: result.intent_id
         },
-        status: body.publish_now ? 'published' : 'staged'
+        status: finalStatus
       };
 
       const { error: dbError } = await supabase.from('content_blocks_v2').upsert(dbPayload);
       if (dbError) throw dbError;
+
+      // Write granular prediction metrics
+      await supabase.from('seo_prediction_metrics').upsert({
+        content_id: intentId,
+        discover_score: serpReport.discoverEligibility,
+        serp_score: serpReport.serpScore,
+        crawl_score: crawlSimulation.canonicalConsistency,
+        eeat_score: serpReport.eeat,
+        freshness_score: crawlSimulation.freshnessScore,
+        internal_link_score: crawlSimulation.internalLinkScore
+      });
 
       // Populate vector embedding for search
       const embeddingText = `${payload.title} ${payload.blocks.map((b: any) => b.content).join(' ')}`;
@@ -334,12 +387,23 @@ v2Router.post('/ingest', ingestRateLimit, async (c) => {
 
       const normalizedBlock = buildContentBlock(dbPayload);
 
-      // Trigger multi-channel distribution
-      if (body.publish_now) {
+      // Trigger multi-channel distribution & indexing alert
+      if (finalStatus === 'published') {
         await syndicateContent(normalizedBlock);
+        // Async invoke Indexing client
+        IndexingClient.submitUrl(`https://simis.media/read/${normalizedBlock.slug}`).catch(() => {});
       }
 
-      return c.json({ success: true, item: normalizedBlock, poe: result.poe });
+      return c.json({ 
+        success: true, 
+        item: normalizedBlock, 
+        poe: result.poe,
+        seo: {
+          serp_score: serpReport.serpScore,
+          discover_eligible: discoverReport.isEligible,
+          cannibalization: cannibalizationReport
+        }
+      });
     } else {
       return c.json({ error: 'Kernel pipeline execution failed' }, 500);
     }

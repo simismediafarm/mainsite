@@ -1,7 +1,6 @@
 import { ContentBlockV2 } from './block_builder';
 
 import { getSupabase } from '@simis/kernel-graph/dist/executor/kernelExecutor';
-import crypto from 'crypto';
 
 export class FeedStabilityLockEngine {
   static readonly LOCK_WINDOW_MS = 300 * 1000; // 300 seconds
@@ -89,7 +88,8 @@ export class RankingArbitrationKernel {
     
     // Compute a hash of the current candidate set to detect drift
     const contentIds = reconciled.map(b => b.id).sort().join(',');
-    const feedHash = crypto.createHash('sha256').update(contentIds).digest('hex');
+    const hashInt = contentIds.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a }, 0);
+    const feedHash = Math.abs(hashInt).toString(16);
     
     const lockedOrder = await FeedStabilityLockEngine.getLockedOrder(sessionId, feedHash);
     

@@ -11,10 +11,7 @@ export default function CmsCurationView() {
     fetch(`${API_BASE}/api/v2/admin/content/queue`)
       .then(res => res.json())
       .then(data => setDrafts(data.items || []))
-      .catch(() => setDrafts([
-        { id: '1', title: 'Pending Review: Sony XM6', score: 0.95, status: 'draft' },
-        { id: '2', title: 'Pending Review: Apple iPad Air', score: 0.88, status: 'draft' }
-      ]));
+      .catch(() => setDrafts([]));
   }, []);
 
   const handleApprove = (id: string) => {
@@ -34,16 +31,23 @@ export default function CmsCurationView() {
       <p style={adminStyles.subtitle}>Review drafts with vector similarity markers before publishing.</p>
       
       <div style={adminStyles.grid}>
-        {drafts.map(draft => (
-          <div key={draft.id} className="glass-container" style={adminStyles.card}>
-            <h3>{draft.title}</h3>
-            <p>Similarity Score: {draft.score}</p>
-            <div style={adminStyles.actions}>
-              <button style={adminStyles.approveBtn} onClick={() => handleApprove(draft.id)}>Approve & Publish</button>
-              <button style={adminStyles.rejectBtn}>Reject</button>
-            </div>
+        {drafts.length === 0 ? (
+          <div style={{gridColumn: '1 / -1', padding: '40px', textAlign: 'center', background: 'var(--surface)', borderRadius: 'var(--radius-md)'}}>
+            <h3 style={{color: 'var(--text-secondary)'}}>No Drafts Pending</h3>
+            <p style={{color: 'var(--text-secondary)', marginTop: '8px'}}>The editorial queue is empty.</p>
           </div>
-        ))}
+        ) : (
+          drafts.map(draft => (
+            <div key={draft.id} className="glass-container" style={adminStyles.card}>
+              <h3>{draft.title}</h3>
+              <p>Similarity Score: {draft.score}</p>
+              <div style={adminStyles.actions}>
+                <button style={adminStyles.approveBtn} onClick={() => handleApprove(draft.id)}>Approve & Publish</button>
+                <button style={adminStyles.rejectBtn}>Reject</button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

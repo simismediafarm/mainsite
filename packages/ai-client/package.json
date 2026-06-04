@@ -9,8 +9,9 @@
     "dev": "tsc -w"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.43.0",
     "@simis/config": "workspace:*",
+    "@simis/kernel-graph": "workspace:^",
+    "@supabase/supabase-js": "^2.43.0",
     "dotenv": "^16.4.5"
   },
   "devDependencies": {

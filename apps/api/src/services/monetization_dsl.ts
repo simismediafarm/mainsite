@@ -2,6 +2,7 @@ import { ContentBlockV2 } from './block_builder';
 
 export class RevenueGovernorService {
   static readonly MAX_AD_DENSITY = 0.3; // max 30% of blocks can be ads/affiliates
+  static readonly MIN_READABILITY_SCORE = 0.7; // readability threshold
 
   static enforceDensity(blocks: ContentBlockV2[]): ContentBlockV2[] {
     const totalBlocks = blocks.length;
@@ -24,6 +25,24 @@ export class RevenueGovernorService {
       }
       return block;
     });
+  }
+
+  static enforceReadability(block: ContentBlockV2): ContentBlockV2 {
+    const paragraphs = block.blocks.filter(b => b.type === 'paragraph').length;
+    const products = block.blocks.filter(b => b.type === 'product').length;
+    
+    const totalContentBlocks = paragraphs + products;
+    const readabilityScore = totalContentBlocks > 0 ? (paragraphs / totalContentBlocks) : 1.0;
+
+    if (readabilityScore < this.MIN_READABILITY_SCORE) {
+      // Compromised readability: force standard layout variant and flag policy violation
+      block.delivery.layout_variant = 'minimal';
+      if (!block.governance.policy_violations.includes('RevenueGovernor: compromised readability')) {
+        block.governance.policy_violations.push(`RevenueGovernor: compromised readability (${(readabilityScore * 100).toFixed(1)}% < 70%)`);
+      }
+    }
+
+    return block;
   }
 }
 
@@ -79,8 +98,11 @@ export class MonetizationDSLInterpreter {
 
 export class MonetizationPlacementResolver {
   static resolve(blocks: ContentBlockV2[]): ContentBlockV2[] {
-    // 1. Precompile DSL Rules for each block (usually done during ingestion, but safe here)
-    let resolvedBlocks = blocks.map(b => MonetizationDSLInterpreter.precompile(b));
+    // 1. Precompile DSL Rules for each block and enforce readability limits
+    let resolvedBlocks = blocks.map(b => {
+      const precompiled = MonetizationDSLInterpreter.precompile(b);
+      return RevenueGovernorService.enforceReadability(precompiled);
+    });
     
     // 2. Governor enforces global density constraints across the feed
     resolvedBlocks = RevenueGovernorService.enforceDensity(resolvedBlocks);

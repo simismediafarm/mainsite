@@ -6,6 +6,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { API_BASE } from '../../../lib/kernel-api';
 
 interface Block {
@@ -65,18 +66,26 @@ export default function ArticlePage() {
         if (data && !data.error) {
           setContent(data);
         } else {
-          setContent(MOCK_ARTICLE_DATA[slug] ?? MOCK_ARTICLE_DATA['default']);
+          setContent(null);
         }
         setLoading(false);
       })
       .catch(() => {
-        setContent(MOCK_ARTICLE_DATA[slug] ?? MOCK_ARTICLE_DATA['default']);
+        setContent(null);
         setLoading(false);
       });
   }, [slug]);
 
   if (loading) return <p>Loading article content...</p>;
-  if (!content) return <p>Article not found.</p>;
+  if (!content) {
+    return (
+      <div style={{ padding: '80px 20px', textAlign: 'center' }}>
+        <h1 style={{ fontSize: '28px', color: 'var(--text-primary)' }}>⚠️ Article Not Found</h1>
+        <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>The page you are looking for does not exist or has been archived.</p>
+        <Link href="/" style={{ display: 'inline-block', marginTop: '16px', color: 'var(--primary)', textDecoration: 'underline' }}>Back to home feed</Link>
+      </div>
+    );
+  }
 
   const jsonLdArticle = {
     '@context': 'https://schema.org',
@@ -185,38 +194,6 @@ export default function ArticlePage() {
     </div>
   );
 }
-
-// Fallback visual mock maps
-const MOCK_ARTICLE_DATA: Record<string, ContentBlockV2> = {
-  'best-noise-cancelling-headphones-2026': {
-    id: "1",
-    type: "article",
-    title: "Best Noise Cancelling Headphones of 2026: Sony vs Bose vs Apple",
-    slug: "best-noise-cancelling-headphones-2026",
-    blocks: [
-      { type: 'paragraph', content: 'Noise cancellation tech has taken a massive leap forward in 2026. Microphones are smaller, algorithms are faster, and the physical isolation materials are lighter than ever before.' },
-      { type: 'quote', content: 'The Sony WH-1000XM6 delivers an unprecedented -45dB of active noise cancellation, shutting out low-frequency engine rumbles completely.' },
-      { type: 'paragraph', content: 'In our testing, we compared the Sony XM6 alongside the Bose QuietComfort Ultra and the Apple AirPods Max 2. While Apple excels in material premium feel, Sony takes the performance lead.' },
-      { type: 'product', content: { title: 'Sony WH-1000XM6 Wireless Headphones (Amazon Direct Link)', price: 299, url: 'https://amazon.com/sony-xm6' } },
-      { type: 'divider', content: null },
-      { type: 'paragraph', content: 'For users who value pure portability, the Bose Ultra earbuds offer a competing format, but for the true audio purist, over-ear remains king.' }
-    ],
-    metadata: { category: "Tech", tags: ["audio", "sony", "headphones"], author: "AGC Writer", created_at: new Date().toISOString() },
-    trace: { poe_hash: "ca978112ca1bbdcafac231b39a2304d166f100376d22384a51e6040850a2948a" }
-  },
-  'default': {
-    id: "default",
-    type: "article",
-    title: "Sony WH-1000XM6 Wireless Headphones (Amazon Direct Link)",
-    slug: "sony-wh-1000xm6-deal",
-    blocks: [
-      { type: 'paragraph', content: 'Here is a hot price drop on the premium Sony XM6 noise-cancelling headphones. Buy today to lock in 25% savings.' },
-      { type: 'product', content: { title: 'Sony WH-1000XM6 Wireless Headphones (Amazon Direct Link)', price: 299, url: 'https://amazon.com/sony-xm6' } }
-    ],
-    metadata: { category: "Deals", tags: ["deals", "amazon"], author: "Scraper Bot", created_at: new Date().toISOString() },
-    trace: { poe_hash: "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" }
-  }
-};
 
 const articleStyles: Record<string, React.CSSProperties> = {
   container: {

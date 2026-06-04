@@ -12,9 +12,13 @@
     "@simis/kernel-graph": "workspace:*",
     "@simis/reasoning-graph": "workspace:*",
     "@supabase/supabase-js": "^2.43.0",
+    "cheerio": "^1.2.0",
+    "cosine-similarity": "^1.0.1",
     "dotenv": "^16.4.5",
     "hono": "^4.2.0",
-    "ioredis": "^5.11.0"
+    "ioredis": "^5.11.0",
+    "natural": "^8.1.1",
+    "p-limit": "^7.3.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

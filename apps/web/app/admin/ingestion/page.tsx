@@ -1,15 +1,26 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { adminStyles } from '../adminStyles';
 
+import { API_BASE } from '../../../lib/kernel-api';
+
 export default function IngestionQueuesView() {
-  const [sources, setSources] = useState([
-    { id: '1', name: 'TechCrunch Feed', type: 'rss', status: 'active', lastRun: '10 mins ago' },
-    { id: '2', name: 'Amazon Deals Scraper', type: 'scraping_api', status: 'paused', lastRun: '2 hours ago' }
-  ]);
+  const [sources, setSources] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/v2/admin/ingestion/sources`)
+      .then(res => res.json())
+      .then(data => {
+        setSources(data.sources || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
   const toggleStatus = (id: string) => {
+    // In production, wire to PUT /api/v2/admin/ingestion/sources/:id/status
     setSources(sources.map(s => 
       s.id === id ? { ...s, status: s.status === 'active' ? 'paused' : 'active' } : s
     ));
@@ -21,7 +32,7 @@ export default function IngestionQueuesView() {
       <p style={adminStyles.subtitle}>Manage automated data pipelines and scraping triggers.</p>
       
       <div style={adminStyles.grid}>
-        {sources.map(source => (
+        {loading ? <p>Loading ingestion sources...</p> : sources.map(source => (
           <div key={source.id} className="glass-container" style={adminStyles.card}>
             <h3>{source.name}</h3>
             <p style={{fontSize: '14px', color: 'var(--text-secondary)'}}>Type: {source.type}</p>

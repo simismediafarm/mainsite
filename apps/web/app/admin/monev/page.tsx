@@ -3,25 +3,22 @@
 import React, { useState, useEffect } from 'react';
 import { adminStyles } from '../adminStyles';
 
+import { API_BASE } from '../../../lib/kernel-api';
+
 export default function ObservabilityMonitorView() {
   const [logs, setLogs] = useState<any[]>([]);
 
   useEffect(() => {
-    // Mock streaming of audit events / telemetry
-    const interval = setInterval(() => {
-      setLogs(prev => [
-        {
-          id: Math.random().toString(),
-          timestamp: new Date().toLocaleTimeString(),
-          action: 'SCRAPE_JOB_COMPLETED',
-          target: 'TechCrunch Feed',
-          status: 'Success'
-        },
-        ...prev
-      ].slice(0, 15));
-    }, 4000);
+    const sse = new EventSource(`${API_BASE}/api/v2/admin/telemetry/stream`);
     
-    return () => clearInterval(interval);
+    sse.addEventListener('log', (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        setLogs(prev => [payload, ...prev].slice(0, 15));
+      } catch (err) {}
+    });
+
+    return () => sse.close();
   }, []);
 
   return (

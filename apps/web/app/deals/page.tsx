@@ -1,6 +1,7 @@
 /**
  * page.tsx — SIMIS Deals Stream Directory Page
  */
+/* eslint-disable @next/next/no-img-element */
 
 "use client";
 
@@ -30,12 +31,12 @@ export default function DealsPage() {
         if (data.items) {
           setProducts(data.items);
         } else {
-          setProducts(MOCK_PRODUCTS);
+          setProducts([]);
         }
         setLoading(false);
       })
       .catch(() => {
-        setProducts(MOCK_PRODUCTS);
+        setProducts([]);
         setLoading(false);
       });
   }, []);
@@ -74,6 +75,11 @@ export default function DealsPage() {
 
       {loading ? (
         <p>Loading active deals feed...</p>
+      ) : products.length === 0 ? (
+        <div style={{ padding: '80px 20px', textAlign: 'center' }}>
+          <h2 style={dealsStyles.cardTitle}>🛍️ No Active Deals</h2>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>We are currently updating our price monitors. Check back soon for new discounts.</p>
+        </div>
       ) : (
         <div style={dealsStyles.grid}>
           {products.map(product => {
@@ -98,13 +104,10 @@ export default function DealsPage() {
                 </div>
                 <div style={dealsStyles.providerInfo}>
                   <span style={dealsStyles.provider}>Source: {product.provider}</span>
-                  <span style={product.availability ? dealsStyles.instock : dealsStyles.out}>
-                    {product.availability ? 'In Stock' : 'Out of Stock'}
-                  </span>
+                  <a href={product.url} target="_blank" rel="noopener noreferrer" style={dealsStyles.buyBtn}>
+                    Buy Now
+                  </a>
                 </div>
-                <a href={product.url} target="_blank" rel="noopener noreferrer" style={dealsStyles.btn}>
-                  Buy on {product.provider}
-                </a>
               </div>
             );
           })}
@@ -113,39 +116,6 @@ export default function DealsPage() {
     </div>
   );
 }
-
-const MOCK_PRODUCTS: Product[] = [
-  {
-    product_id: "p1",
-    title: "Sony WH-1000XM6 Wireless Noise-Cancelling Headphones",
-    url: "https://amazon.com/sony-xm6",
-    price: 299.00,
-    original_price: 399.00,
-    image_url: "",
-    availability: true,
-    provider: "Amazon"
-  },
-  {
-    product_id: "p2",
-    title: "Bose QuietComfort Ultra Over-Ear Bluetooth Headphones",
-    url: "https://shopee.com/bose-ultra",
-    price: 329.00,
-    original_price: 429.00,
-    image_url: "",
-    availability: true,
-    provider: "Shopee"
-  },
-  {
-    product_id: "p3",
-    title: "Apple AirPods Max (USB-C Connection, Green)",
-    url: "https://tokopedia.com/airpods-max-c",
-    price: 449.00,
-    original_price: 549.00,
-    image_url: "",
-    availability: false,
-    provider: "Tokopedia"
-  }
-];
 
 const dealsStyles: Record<string, React.CSSProperties> = {
   container: {

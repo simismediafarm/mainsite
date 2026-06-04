@@ -20,6 +20,7 @@ export interface AffiliateBlock {
 export interface ContentBlockV2 {
   id: string;
   type: "article" | "affiliate" | "scraped" | "ai_generated" | "comparison";
+  status: string; // "draft" | "staged" | "ranked" | "published" | "archived"
   title: string;
   slug: string;
   blocks: Block[];
@@ -105,6 +106,7 @@ export function buildContentBlock(row: any): ContentBlockV2 {
   return {
     id: row.id,
     type: row.type || "article",
+    status: row.status || "draft",
     title: row.title,
     slug: row.slug,
     blocks: Array.isArray(row.blocks) ? row.blocks : [],

@@ -26,20 +26,29 @@ export default function SystemAdminPage() {
     fetch(`${API_BASE}/kernel/status`)
       .then(res => res.json())
       .then(data => setStatus(data))
-      .catch(() => setStatus(MOCK_STATUS));
+      .catch(console.error);
 
-    // Fetch mock failed ingestion queue
-    setFailedIngests(MOCK_FAILED_QUEUE);
+    // Fetch actual failed ingestion queue
+    fetch(`${API_BASE}/api/v2/admin/dlq`)
+      .then(res => res.json())
+      .then(data => setFailedIngests(data.items || []))
+      .catch(console.error);
   }, []);
 
   const handleRetry = (id: string) => {
     setRetryingId(id);
-    // Simulate retry pipeline reload
-    setTimeout(() => {
-      setFailedIngests(prev => prev.filter(item => item.id !== id));
-      setRetryingId(null);
-      alert(`Intent ${id} re-enqueued to pipeline successfully.`);
-    }, 1500);
+    fetch(`${API_BASE}/api/v2/admin/dlq/retry`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    })
+      .then(res => res.json())
+      .then(data => {
+        setFailedIngests(prev => prev.filter(item => item.id !== id));
+        setRetryingId(null);
+        alert(data.message || `Intent ${id} re-enqueued.`);
+      })
+      .catch(() => setRetryingId(null));
   };
 
   return (
@@ -108,19 +117,7 @@ export default function SystemAdminPage() {
   );
 }
 
-const MOCK_STATUS: PipelineStatus = {
-  status: "HEALTHY",
-  metrics: {
-    total_intents: 24,
-    total_poe: 24,
-    total_violations: 0
-  }
-};
 
-const MOCK_FAILED_QUEUE = [
-  { id: "int-8a2b3c", reason: "COMPLIANCE VIOLATION: Missing author attribution tags", retries: 1 },
-  { id: "int-9d4e5f", reason: "API RATE LIMIT: Gemini tokens quota limits hit", retries: 2 }
-];
 
 const sysStyles: Record<string, React.CSSProperties> = {
   container: {

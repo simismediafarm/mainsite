@@ -6,13 +6,20 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { API_BASE } from '../../../lib/kernel-api';
 
 interface ComparisonRow {
   feature: string;
-  sony_xm6: string;
-  bose_ultra: string;
-  airpods_max: string;
+  [key: string]: any;
+}
+
+interface ProductMeta {
+  id: string;
+  name: string;
+  isBest?: boolean;
+  affiliateLink?: string;
+  price?: string;
 }
 
 interface ContentBlockV2 {
@@ -25,6 +32,8 @@ interface ContentBlockV2 {
     category: string;
     tags: string[];
     author: string;
+    comparison_rows?: ComparisonRow[];
+    products?: ProductMeta[];
   };
 }
 
@@ -43,25 +52,45 @@ export default function ComparePage() {
         if (data && !data.error) {
           setContent(data);
         } else {
-          setContent(MOCK_COMPARE);
+          setContent(null);
         }
         setLoading(false);
       })
       .catch(() => {
-        setContent(MOCK_COMPARE);
+        setContent(null);
         setLoading(false);
       });
   }, [slug]);
 
   if (loading) return <p>Loading comparison data...</p>;
-  if (!content) return <p>Comparison not found.</p>;
+  if (!content) {
+    return (
+      <div style={{ padding: '80px 20px', textAlign: 'center' }}>
+        <h1 style={{ fontSize: '28px', color: 'var(--text-primary)' }}>⚠️ Comparison Not Found</h1>
+        <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>The comparison grid you are looking for does not exist or has been archived.</p>
+        <Link href="/" style={{ display: 'inline-block', marginTop: '16px', color: 'var(--primary)', textDecoration: 'underline' }}>Back to home feed</Link>
+      </div>
+    );
+  }
+
+  const rows = (content.metadata?.comparison_rows || []) as ComparisonRow[];
+  
+  // Try to use defined products metadata, otherwise infer from the first row's keys
+  let products: ProductMeta[] = content.metadata?.products || [];
+  if (products.length === 0 && rows.length > 0) {
+    const keys = Object.keys(rows[0]).filter(k => k !== 'feature');
+    products = keys.map(k => ({
+      id: k,
+      name: k.replace(/_/g, ' ').toUpperCase()
+    }));
+  }
 
   return (
     <div style={compareStyles.container}>
       <header style={compareStyles.header}>
         <span style={compareStyles.category}>{content.metadata.category}</span>
         <h1 style={compareStyles.title}>{content.title}</h1>
-        <p style={compareStyles.sub}>Comparing noise-cancellation specs, design comfort, and pricing metrics.</p>
+        <p style={compareStyles.sub}>Comparing features, specifications, and pricing metrics.</p>
       </header>
 
       {/* Comparison Grid Table */}
@@ -70,65 +99,49 @@ export default function ComparePage() {
           <thead>
             <tr style={compareStyles.theadRow}>
               <th style={compareStyles.th}>Feature Spec</th>
-              <th style={compareStyles.thHighlight}>
-                Sony WH-1000XM6
-                <span style={compareStyles.badgeValue}>★ Best Overall</span>
-              </th>
-              <th style={compareStyles.th}>Bose QC Ultra</th>
-              <th style={compareStyles.th}>AirPods Max 2</th>
+              {products.map(p => (
+                <th key={p.id} style={p.isBest ? compareStyles.thHighlight : compareStyles.th}>
+                  {p.name}
+                  {p.isBest && <span style={compareStyles.badgeValue}>★ Best Overall</span>}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {MOCK_ROWS.map((row, idx) => (
+            {rows.map((row, idx) => (
               <tr key={idx} style={idx % 2 === 0 ? compareStyles.trEven : compareStyles.trOdd}>
                 <td style={compareStyles.tdLabel}>{row.feature}</td>
-                <td style={compareStyles.tdHighlight}>{row.sony_xm6}</td>
-                <td style={compareStyles.td}>{row.bose_ultra}</td>
-                <td style={compareStyles.td}>{row.airpods_max}</td>
+                {products.map(p => (
+                  <td key={p.id} style={p.isBest ? compareStyles.tdHighlight : compareStyles.td}>
+                    {row[p.id]}
+                  </td>
+                ))}
               </tr>
             ))}
-            {/* CTA Layer row */}
-            <tr style={compareStyles.ctaRow}>
-              <td style={compareStyles.tdLabel}>Affiliate Links</td>
-              <td style={compareStyles.tdHighlight}>
-                <a href="https://amazon.com/sony-xm6" target="_blank" rel="noopener" style={compareStyles.buyBtn}>
-                  Buy on Amazon ($299)
-                </a>
-              </td>
-              <td style={compareStyles.td}>
-                <a href="https://shopee.com/bose-ultra" target="_blank" rel="noopener" style={compareStyles.secondaryBtn}>
-                  Buy on Shopee ($329)
-                </a>
-              </td>
-              <td style={compareStyles.td}>
-                <a href="https://tokopedia.com/apple-max" target="_blank" rel="noopener" style={compareStyles.secondaryBtn}>
-                  Buy on Tokopedia ($449)
-                </a>
-              </td>
-            </tr>
+            
+            {/* CTA Layer row - Only render if at least one product has an affiliate link */}
+            {products.some(p => p.affiliateLink) && (
+              <tr style={compareStyles.ctaRow}>
+                <td style={compareStyles.tdLabel}>Affiliate Links</td>
+                {products.map(p => (
+                  <td key={p.id} style={p.isBest ? compareStyles.tdHighlight : compareStyles.td}>
+                    {p.affiliateLink ? (
+                      <a href={p.affiliateLink} target="_blank" rel="noopener" style={p.isBest ? compareStyles.buyBtn : compareStyles.secondaryBtn}>
+                        Buy on {new URL(p.affiliateLink).hostname.replace('www.', '')} ({p.price || 'Check Price'})
+                      </a>
+                    ) : (
+                      <span style={{color: 'var(--text-secondary)'}}>Not Available</span>
+                    )}
+                  </td>
+                ))}
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
     </div>
   );
 }
-
-const MOCK_COMPARE: ContentBlockV2 = {
-  id: "compare-1",
-  type: "comparison",
-  title: "Sony WH-1000XM6 vs Bose QC Ultra vs AirPods Max 2",
-  slug: "sony-xm6-vs-bose-ultra",
-  blocks: [],
-  metadata: { category: "Compare", tags: ["headphones", "audio", "specs"], author: "Reasoning Engine" }
-};
-
-const MOCK_ROWS: ComparisonRow[] = [
-  { feature: "Active Noise Cancelling", sony_xm6: "45dB (Excellent)", bose_ultra: "41dB (Very Good)", airpods_max: "38dB (Good)" },
-  { feature: "Battery Life (ANC On)", sony_xm6: "36 Hours", bose_ultra: "24 Hours", airpods_max: "20 Hours" },
-  { feature: "Weight / Materials", sony_xm6: "245g (Recycled PC)", bose_ultra: "250g (Plastic)", airpods_max: "385g (Aluminum)" },
-  { feature: "Codec Support", sony_xm6: "LDAC, AAC, SBC", bose_ultra: "aptX Adaptive, AAC", airpods_max: "AAC, SBC" },
-  { feature: "Price Drop", sony_xm6: "$299 ($100 savings)", bose_ultra: "$329 ($50 savings)", airpods_max: "$449 (No discount)" }
-];
 
 const compareStyles: Record<string, React.CSSProperties> = {
   container: {
