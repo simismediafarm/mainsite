@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { API_BASE } from '../../lib/kernel-api';
+import { API_BASE } from '../lib/kernel-api';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://mediafarm.vercel.app';
