@@ -1,5 +1,18 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalEnv": [
+    "SUPABASE_URL",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "SUPABASE_ANON_KEY",
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    "GEMINI_API_KEY",
+    "TAVILY_API_KEY",
+    "DISCORD_WEBHOOK_URL",
+    "PORT",
+    "ALLOWED_ORIGIN",
+    "NEXT_PUBLIC_KERNEL_API_URL"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
