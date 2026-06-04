@@ -5,6 +5,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { API_BASE } from '../../lib/kernel-api';
 
 interface SearchResult {
@@ -74,7 +75,7 @@ export default function SearchPage() {
                 <span style={searchStyles.category}>{item.metadata.category}</span>
                 <h3 style={searchStyles.cardTitle}>{item.title}</h3>
                 <div style={searchStyles.footer}>
-                  <a href={`/read/${item.slug}`} style={searchStyles.link}>View Details ➔</a>
+                  <Link href={`/read/${item.slug}`} style={searchStyles.link}>View Details ➔</Link>
                   <span style={searchStyles.type}>{item.type}</span>
                 </div>
               </div>
@@ -84,7 +85,7 @@ export default function SearchPage() {
 
         {!searching && results.length === 0 && query && (
           <div style={searchStyles.empty}>
-            <p>No results found for "{query}". Try another search term.</p>
+            <p>No results found for &quot;{query}&quot;. Try another search term.</p>
           </div>
         )}
       </div>

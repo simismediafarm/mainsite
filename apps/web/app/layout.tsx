@@ -4,6 +4,7 @@
 
 import './index.css';
 import React from 'react';
+import Link from 'next/link';
 
 export const metadata = {
   title: 'SIMIS Media Platform — Programmatic AGC & affiliate network',
@@ -22,16 +23,16 @@ export default function RootLayout({
           {/* Global Navigation Header */}
           <header style={layoutStyles.header}>
             <div style={layoutStyles.navWrapper}>
-              <a href="/" style={layoutStyles.logo}>
+              <Link href="/" style={layoutStyles.logo}>
                 🧭 SIMIS <span style={layoutStyles.logoSub}>MEDIA</span>
-              </a>
+              </Link>
               <nav style={layoutStyles.nav}>
-                <a href="/" style={layoutStyles.navLink}>Home</a>
-                <a href="/deals" style={layoutStyles.navLink}>Deals</a>
-                <a href="/search" style={layoutStyles.navLink}>Search</a>
+                <Link href="/" style={layoutStyles.navLink}>Home</Link>
+                <Link href="/deals" style={layoutStyles.navLink}>Deals</Link>
+                <Link href="/search" style={layoutStyles.navLink}>Search</Link>
                 {/* Admin/Internal quick links (discreetly styled in footer or nav) */}
-                <a href="/admin/cms" style={layoutStyles.adminLink}>CMS</a>
-                <a href="/admin/system" style={layoutStyles.adminLink}>SysOps</a>
+                <Link href="/admin/cms" style={layoutStyles.adminLink}>CMS</Link>
+                <Link href="/admin/system" style={layoutStyles.adminLink}>SysOps</Link>
               </nav>
             </div>
           </header>
@@ -46,8 +47,8 @@ export default function RootLayout({
             <div style={layoutStyles.footerWrapper}>
               <p style={layoutStyles.copy}>&copy; 2026 SIMIS Media. All rights reserved. Automated via deterministic publishing engines.</p>
               <div style={layoutStyles.footerLinks}>
-                <a href="/sitemap.xml" style={layoutStyles.footerLink}>Sitemap</a>
-                <a href="/rss.xml" style={layoutStyles.footerLink}>RSS Feed</a>
+                <Link href="/sitemap.xml" style={layoutStyles.footerLink}>Sitemap</Link>
+                <Link href="/rss.xml" style={layoutStyles.footerLink}>RSS Feed</Link>
               </div>
             </div>
           </footer>

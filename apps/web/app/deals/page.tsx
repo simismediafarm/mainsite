@@ -59,6 +59,7 @@ export default function DealsPage() {
                   <div style={dealsStyles.badge}>-{disc}% Off</div>
                 )}
                 {product.image_url ? (
+                  /* @eslint-disable-next-line @next/next/no-img-element */
                   <img src={product.image_url} alt={product.title} style={dealsStyles.img} />
                 ) : (
                   <div style={dealsStyles.imgPlaceholder}>🛒 SIMIS PRODUCT</div>
