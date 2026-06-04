@@ -35,6 +35,26 @@ export default function ArticlePage() {
   const slug = params?.slug as string;
   const [content, setContent] = useState<ContentBlockV2 | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+
+  const toggleBookmark = async () => {
+    setIsBookmarked(!isBookmarked);
+    // In real app, call API: POST /api/v2/public/bookmark
+    try {
+      await fetch(`${API_BASE}/api/v2/public/bookmark`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contentId: content?.id })
+      });
+    } catch (e) {
+      console.error('Failed to bookmark', e);
+    }
+  };
+
+  const copyUrl = () => {
+    navigator.clipboard.writeText(window.location.href);
+    alert("URL copied to clipboard!");
+  };
 
   useEffect(() => {
     if (!slug) return;
@@ -90,6 +110,22 @@ export default function ArticlePage() {
           <h1 style={articleStyles.title}>{content.title}</h1>
           <div style={articleStyles.meta}>
             Published by <span style={articleStyles.bold}>{content.metadata.author}</span> on {new Date(content.metadata.created_at).toLocaleDateString()}
+          </div>
+          
+          {/* Social Utility Bar & Bookmark */}
+          <div style={articleStyles.socialBar}>
+            <button style={articleStyles.socialBtn} onClick={toggleBookmark}>
+              {isBookmarked ? '🔖 Saved' : '🔖 Bookmark'}
+            </button>
+            <button style={articleStyles.socialBtn} onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(content.title)}`, '_blank')}>
+              🐦 Twitter
+            </button>
+            <button style={articleStyles.socialBtn} onClick={() => window.open(`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(window.location.href)}&title=${encodeURIComponent(content.title)}`, '_blank')}>
+              💼 LinkedIn
+            </button>
+            <button style={articleStyles.socialBtn} onClick={copyUrl}>
+              🔗 Copy URL
+            </button>
           </div>
         </header>
 
@@ -211,6 +247,25 @@ const articleStyles: Record<string, React.CSSProperties> = {
     color: 'var(--text-secondary)',
     fontSize: '14px',
     marginTop: '12px',
+  },
+  socialBar: {
+    display: 'flex',
+    gap: '12px',
+    marginTop: '24px',
+    alignItems: 'center',
+  },
+  socialBtn: {
+    background: 'var(--surface-border)',
+    border: 'none',
+    color: 'var(--text-primary)',
+    padding: '8px 12px',
+    borderRadius: 'var(--radius-sm)',
+    fontSize: '13px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontWeight: 500,
   },
   bold: {
     fontWeight: 600,

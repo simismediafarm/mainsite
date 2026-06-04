@@ -1,11 +1,11 @@
 /**
  * page.tsx — SIMIS Programmatic Media Homepage
+ * RSC Version for Zero-CLS & Hydration fixes
  */
 
-"use client";
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { API_BASE } from '../lib/kernel-api';
+import NewsletterModal from '../components/NewsletterModal';
 
 interface ContentBlockV2 {
   id: string;
@@ -25,27 +25,20 @@ interface ContentBlockV2 {
   };
 }
 
-export default function HomePage() {
-  const [feedItems, setFeedItems] = useState<ContentBlockV2[]>([]);
-  const [loading, setLoading] = useState(true);
+export default async function HomePage() {
+  let feedItems: ContentBlockV2[] = [];
 
-  useEffect(() => {
-    fetch(`${API_BASE}/api/v2/feed?limit=15`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.items) {
-          setFeedItems(data.items);
-        } else {
-          setFeedItems(MOCK_FEED_ITEMS);
-        }
-        setLoading(false);
-      })
-      .catch(() => {
-        // Safe offline mode fallback
-        setFeedItems(MOCK_FEED_ITEMS);
-        setLoading(false);
-      });
-  }, []);
+  try {
+    const res = await fetch(`${API_BASE}/api/v2/feed?limit=15`, { next: { revalidate: 60 } });
+    if (res.ok) {
+      const data = await res.json();
+      feedItems = data.items || MOCK_FEED_ITEMS;
+    } else {
+      feedItems = MOCK_FEED_ITEMS;
+    }
+  } catch (err) {
+    feedItems = MOCK_FEED_ITEMS;
+  }
 
   const heroItem = feedItems[0];
   const dealsItems = feedItems.filter(item => item.type === 'affiliate');
@@ -105,29 +98,33 @@ export default function HomePage() {
       {/* ── Section C: Main Ranked Stream (Infinite Content Stream) ─────────── */}
       <section style={homeStyles.streamSection}>
         <h2 style={homeStyles.sectionTitle}>📰 Discovery Stream</h2>
-        {loading ? (
-          <p>Loading ranked feed...</p>
-        ) : (
-          <div style={homeStyles.feedGrid}>
-            {streamItems.map(item => (
-              <article key={item.id} className="glass-container hover-lift" style={homeStyles.articleCard}>
-                <div style={homeStyles.cardHeader}>
-                  <span style={homeStyles.category}>{item.metadata.category}</span>
-                  <span style={homeStyles.scoreBadge}>CTR Score: {item.ranking.score.toFixed(2)}</span>
-                </div>
-                <h3 style={homeStyles.cardTitle}>{item.title}</h3>
-                <p style={homeStyles.cardSnippet}>
-                  Explore automated specs, price comparison grids, and dynamic scoring indexes.
-                </p>
-                <div style={homeStyles.cardFooter}>
-                  <a href={`/read/${item.slug}`} style={homeStyles.cardLink}>Read Article ➔</a>
-                  <span style={homeStyles.typeBadge}>{item.type}</span>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+        <div style={homeStyles.feedGrid}>
+          {streamItems.map(item => (
+            <article key={item.id} className="glass-container hover-lift" style={homeStyles.articleCard}>
+              <div style={homeStyles.cardHeader}>
+                <span style={homeStyles.category}>{item.metadata.category}</span>
+                <span style={homeStyles.scoreBadge}>CTR Score: {item.ranking.score.toFixed(2)}</span>
+              </div>
+              <h3 style={homeStyles.cardTitle}>{item.title}</h3>
+              <p style={homeStyles.cardSnippet}>
+                Explore automated specs, price comparison grids, and dynamic scoring indexes.
+              </p>
+              <div style={homeStyles.cardFooter}>
+                <a href={`/read/${item.slug}`} style={homeStyles.cardLink}>Read Article ➔</a>
+                <span style={homeStyles.typeBadge}>{item.type}</span>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
+
+      {/* ── Pre-reserved Ad Slot (Prevents Layout Shift) ──────────────────── */}
+      <div style={homeStyles.adSlot}>
+        <span style={homeStyles.adPlaceholderText}>Advertisement - 728x90</span>
+      </div>
+
+      {/* ── Lead Capture Newsletter Box (Client Component) ────────────────── */}
+      <NewsletterModal />
     </div>
   );
 }
@@ -353,5 +350,63 @@ const homeStyles: Record<string, React.CSSProperties> = {
     padding: '2px 6px',
     borderRadius: '4px',
     textTransform: 'uppercase',
+  },
+  adSlot: {
+    minHeight: '250px',
+    width: '100%',
+    background: 'var(--surface-border)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 'var(--radius-md)',
+    marginTop: '24px',
+  },
+  adPlaceholderText: {
+    color: 'var(--text-secondary)',
+    fontSize: '12px',
+    letterSpacing: '1px',
+    textTransform: 'uppercase'
+  },
+  newsletterModal: {
+    position: 'fixed',
+    bottom: '24px',
+    right: '24px',
+    width: '340px',
+    zIndex: 1000,
+    animation: 'slideUp 0.3s ease-out',
+  },
+  newsletterContent: {
+    padding: '24px',
+    borderRadius: 'var(--radius-lg)',
+    position: 'relative',
+    boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+  },
+  closeBtn: {
+    position: 'absolute',
+    top: '12px',
+    right: '12px',
+    background: 'none',
+    border: 'none',
+    color: 'var(--text-secondary)',
+    cursor: 'pointer',
+    fontSize: '16px',
+  },
+  input: {
+    flex: 1,
+    padding: '10px 14px',
+    borderRadius: 'var(--radius-sm)',
+    border: '1px solid var(--surface-border)',
+    background: 'var(--background)',
+    color: 'var(--text-primary)',
+    outline: 'none',
+  },
+  submitBtn: {
+    background: 'var(--primary)',
+    color: '#fff',
+    border: 'none',
+    padding: '10px 16px',
+    borderRadius: 'var(--radius-sm)',
+    fontWeight: 600,
+    cursor: 'pointer',
   }
 };

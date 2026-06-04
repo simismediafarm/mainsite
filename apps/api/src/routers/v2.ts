@@ -14,6 +14,9 @@ import { validateContentCompliance, sanitizeAffiliateLink } from '../services/go
 import { isValidTransition, evaluateAgeTtl, ContentState } from '../services/lifecycle';
 import { enqueueToDLQ } from '../services/recovery';
 import { rateLimit } from '../middleware/rate_limit';
+import { RankingArbitrationKernel } from '../services/ranking_arbitration';
+import { MonetizationPlacementResolver } from '../services/monetization_dsl';
+import { SEOContentSafetyEngine } from '../services/seo_safety';
 
 const v2Router = new Hono();
 
@@ -23,11 +26,57 @@ const ingestRateLimit = rateLimit(10, 60 * 1000); // Max 10 ingests per minute
 // ── GET /feed -> Ranked Content Stream ────────────────────────────────────────
 v2Router.get('/feed', async (c) => {
   const userId = c.req.query('user_id') || null;
+  const sessionId = c.req.query('session_id') || 'anon';
+  const geo = c.req.header('x-forwarded-for-geo') || 'US';
+  const device = c.req.header('user-agent')?.includes('Mobile') ? 'mobile' : 'desktop';
   const limit = parseInt(c.req.query('limit') || '10');
 
   try {
-    const feed = await getPersonalizedFeed(userId, limit);
-    return c.json({ items: feed });
+    // 1. Fetch raw candidate feed
+    const rawFeed = await getPersonalizedFeed(userId, limit);
+    
+    // 2. Resolve Monetization DSL Rules & Global Density Governor
+    let resolvedFeed = MonetizationPlacementResolver.resolve(rawFeed);
+    
+    // 3. SEO Safety Check
+    resolvedFeed = resolvedFeed.map((block, _, arr) => SEOContentSafetyEngine.inspect(block, arr));
+    
+    // 4. Kernel Arbitration & Lock Enforcement (Deterministic scoring)
+    const finalFeed = await RankingArbitrationKernel.arbitrate(resolvedFeed, sessionId);
+
+    // 5. RT-RML v2: Bandit Execution (Dynamic Monetization overriding)
+    const { RTMMEngine } = await import('../services/rt-rml/rtmm-engine');
+    const { ContextVector } = await import('../services/rt-rml/types');
+    
+    // Construct ContextVector for the bandit
+    const context = {
+      geo,
+      device: device as "mobile" | "desktop",
+      category: "general", // We could infer this from user behavior later
+      session_depth: 1
+    };
+    
+    const marketReadyFeed = await RTMMEngine.applyToFeed(finalFeed, context);
+
+    return c.json({ items: marketReadyFeed });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
+// ── POST /internal/recompute-rank ───────────────────────────────────────────
+v2Router.post('/internal/recompute-rank', async (c) => {
+  try {
+    const { sessionId, geo } = await c.req.json();
+    if (!sessionId || !geo) {
+      return c.json({ error: 'Missing sessionId or geo' }, 400);
+    }
+    
+    // Force unlock for re-ranking
+    const { FeedStabilityLockEngine } = await import('../services/ranking_arbitration');
+    await FeedStabilityLockEngine.unlock(sessionId);
+    
+    return c.json({ success: true, message: 'Rank lock released. Next feed request will recompute.' });
   } catch (err: any) {
     return c.json({ error: err.message }, 500);
   }
@@ -221,12 +270,17 @@ v2Router.post('/ingest', ingestRateLimit, async (c) => {
         monetization_weight: body.type === 'affiliate' ? 0.9 : 0.4
       });
 
+      // Import monetization DSL interpreter for precompilation
+      const { MonetizationDSLInterpreter } = await import('../services/monetization_dsl');
+      const tempBlock = buildContentBlock({ ...payload, id: intentId, status: 'staged', ranking: { score: 0 } });
+      const precompiledBlock = MonetizationDSLInterpreter.precompile(tempBlock);
+
       // Save structured record into Postgres media store
       const supabase = getSupabase();
       const dbPayload = {
         id: intentId,
         organization_id: body.organization_id || '00000000-0000-0000-0000-000000000000',
-        type: payload.type,
+        type: precompiledBlock.type,
         title: payload.title,
         slug: payload.slug,
         blocks: payload.blocks,
@@ -243,6 +297,7 @@ v2Router.post('/ingest', ingestRateLimit, async (c) => {
           monetization_weight: body.type === 'affiliate' ? 0.9 : 0.4
         },
         monetization: payload.monetization,
+        resolved_slots: precompiledBlock.resolved_slots || {},
         trace: {
           poe_hash: result.poe.execution_hash,
           io_buffer_id: result.intent_id
