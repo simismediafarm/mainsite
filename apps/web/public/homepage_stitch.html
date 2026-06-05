@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SIMIS MediaFarm</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;family=Source+Serif+4:wght@400;600&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#353534",
+                        "surface-raised": "#121212",
+                        "on-secondary": "#2f3034",
+                        "error-container": "#93000a",
+                        "on-primary": "#00363d",
+                        "inverse-surface": "#e5e2e1",
+                        "secondary-container": "#46464b",
+                        "on-primary-fixed-variant": "#004f58",
+                        "surface-tint": "#00daf3",
+                        "error": "#ffb4ab",
+                        "secondary-fixed-dim": "#c7c6cb",
+                        "terminal-black": "#050505",
+                        "outline-variant": "#3b494c",
+                        "on-background": "#e5e2e1",
+                        "secondary-fixed": "#e3e2e7",
+                        "surface-container-lowest": "#0e0e0e",
+                        "border-subtle": "#222222",
+                        "data-node-magenta": "#FF2D55",
+                        "background": "#131313",
+                        "on-tertiary": "#3e2e00",
+                        "tertiary-fixed": "#ffdf96",
+                        "on-tertiary-fixed": "#251a00",
+                        "inverse-primary": "#006875",
+                        "status-stage-active": "#32D74B",
+                        "primary": "#c3f5ff",
+                        "surface-dim": "#131313",
+                        "inverse-on-surface": "#313030",
+                        "surface": "#131313",
+                        "primary-fixed": "#9cf0ff",
+                        "on-error": "#690005",
+                        "tertiary": "#ffeac0",
+                        "secondary": "#c7c6cb",
+                        "on-primary-container": "#00626e",
+                        "tertiary-container": "#fec931",
+                        "surface-container-high": "#2a2a2a",
+                        "surface-container-low": "#1c1b1b",
+                        "tertiary-fixed-dim": "#f3bf26",
+                        "status-stage-alert": "#FF453A",
+                        "on-surface": "#e5e2e1",
+                        "on-tertiary-container": "#6f5500",
+                        "primary-container": "#00e5ff",
+                        "surface-container": "#201f1f",
+                        "on-surface-variant": "#bac9cc",
+                        "on-secondary-fixed": "#1a1b1f",
+                        "on-error-container": "#ffdad6",
+                        "surface-bright": "#3a3939",
+                        "on-secondary-container": "#b5b4ba",
+                        "surface-variant": "#353534",
+                        "data-node-cyan": "#00E5FF",
+                        "on-secondary-fixed-variant": "#46464b",
+                        "status-stage-draft": "#8E8E93",
+                        "on-primary-fixed": "#001f24",
+                        "on-tertiary-fixed-variant": "#594400",
+                        "outline": "#849396",
+                        "primary-fixed-dim": "#00daf3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "article-max-width": "680px",
+                        "grid-gutter": "12px",
+                        "sidebar-os": "280px",
+                        "cell-padding-v": "4px",
+                        "cell-padding-h": "8px",
+                        "section-gap": "24px"
+                    },
+                    "fontFamily": {
+                        "article-body": ["Source Serif 4"],
+                        "display-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "ui-label-sm": ["Inter"],
+                        "table-data": ["Inter"],
+                        "mono-label": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "article-body": ["18px", {"lineHeight": "1.65", "fontWeight": "400"}],
+                        "display-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-md": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "ui-label-sm": ["12px", {"lineHeight": "1.2", "fontWeight": "500"}],
+                        "table-data": ["13px", {"lineHeight": "1", "fontWeight": "400"}],
+                        "mono-label": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-article-body min-h-screen pt-16">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 border-b border-border-subtle bg-terminal-black flat no shadows flex justify-between items-center h-16 px-grid-gutter w-full max-w-[1440px] mx-auto">
+<div class="flex items-center gap-6">
+<span class="text-headline-md font-headline-md font-black tracking-tight text-primary">SIMIS MediaFarm</span>
+<!-- Search Bar -->
+<div class="hidden md:flex items-center bg-surface-container rounded px-3 py-1.5 border border-border-subtle focus-within:border-primary transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant text-[16px] mr-2">search</span>
+<input class="bg-transparent border-none text-ui-label-sm text-on-surface focus:ring-0 w-64 placeholder:text-on-surface-variant" placeholder="Search Intelligence..." type="text"/>
+</div>
+</div>
+<div class="hidden md:flex items-center gap-6 font-ui-label-sm text-ui-label-sm">
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Intelligence</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Analysis</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Data</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Archive</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-primary text-on-primary font-ui-label-sm text-ui-label-sm px-4 py-1.5 rounded font-bold hover:bg-primary-fixed transition-colors">Subscribe</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined">account_circle</span></button>
+<button class="text-on-surface-variant hover:text-primary transition-colors md:hidden"><span class="material-symbols-outlined">menu</span></button>
+</div>
+</nav>
+<!-- Main Container -->
+<main class="max-w-[1440px] mx-auto px-grid-gutter py-section-gap flex flex-col gap-8">
+<!-- Hero Section -->
+<section class="relative w-full h-[500px] border border-border-subtle bg-surface-raised flex flex-col justify-end p-8 overflow-hidden group">
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover opacity-40 group-hover:opacity-50 transition-opacity duration-700" data-alt="A futuristic and abstract representation of artificial intelligence. Glowing neural network lines and nodes in a deep cybernetic space. High-contrast lighting with deep terminal blacks and striking data-node cyan highlights. Professional, high-performance aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAv1ieN_LcfPy3mYHpIA6wPJlZnUkaXt2HWLzyUskoVvavvtkunnX2a22FW8OAAZ-Mrq6vwz80o-g_P_I8IjcfBaJJxnkp9taBAhJjPHzITrVsWxzQgPvdyroXZVdRExnI1sk_JXvflT0kJM_xGXSTfN_cwVIofq6R3BDDTP4Im2V5UQFTa3ZjLPS3FDCIKrEJP-PSEbCyLh_4xsOFn2irlCixiwRafmcmkBMWml-5CjNegzBA0FBpLa3WP-vSNd1dXYMfehIrVygzx"/>
+<div class="absolute inset-0 bg-gradient-to-t from-terminal-black via-terminal-black/50 to-transparent"></div>
+</div>
+<div class="relative z-10 max-w-3xl flex flex-col gap-4">
+<div class="flex items-center gap-3 font-mono-label text-mono-label">
+<span class="bg-surface-container-high px-2 py-1 text-data-node-cyan border border-border-subtle">AI &amp; SYNTHESIS</span>
+<span class="text-status-stage-active flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-status-stage-active animate-pulse"></span> FACT-CHECKED</span>
+<span class="text-on-surface-variant">12 MIN READ</span>
+</div>
+<h1 class="font-display-lg text-display-lg text-on-surface">The Sovereign Operator: Navigating the New Data Ecosystems</h1>
+<p class="font-article-body text-article-body text-on-surface-variant">An in-depth analysis of how high-performance content assets are managed in the era of automated intelligence and fragmented media landscapes.</p>
+<div class="flex items-center gap-3 mt-4">
+<div class="w-8 h-8 rounded-full bg-surface-container border border-border-subtle overflow-hidden">
+<img alt="Author" class="w-full h-full object-cover" data-alt="A professional headshot of a data analyst. Cinematic lighting, stark dark background. High-contrast, serious tone reflecting an authoritative brand identity. Minimalist cybernetic style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwHd1WhZ6NgsZhuHD4lAiLIrvFbvRfWZJldyP8E5aXe7im7b8ym48nyDv6JD9zEgc_unWLpY7LFLN0Z2wr8JM7RYGzcOBq5ruoE11xHLRP8H_NypmQr3fIyBcuSlV1MtwvzCNj7a7JJku22QByt6OYg2lx7AAbo6eD-o2O7uv44oohWSKg9k_4SNCTbzeXk9PrLg3bLVqk9qOeG2KFJyl332RthwKBKb5jo5f2O-fWX23oskUNPnAomqe0BAc_eUJev9caBCNBNj9_"/>
+</div>
+<div>
+<div class="font-ui-label-sm text-ui-label-sm text-on-surface">Dr. Aris Thorne</div>
+<div class="font-mono-label text-mono-label text-on-surface-variant">Lead Data Architect</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Featured Row Grid -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-grid-gutter">
+<!-- Card 1 -->
+<article class="bg-surface-raised border border-border-subtle flex flex-col group hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="h-48 border-b border-border-subtle overflow-hidden">
+<img class="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity duration-300 group-hover:scale-105 transform" data-alt="Abstract financial charts and graphs glowing against a dark background. Red and cyan lines intersecting. High-density data visualization suitable for a Bloomberg Terminal style interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-aQQDROAUpB_R2Edk2wZ6a7bkBXzTn-YLbgnwa-jhhOLoMiCHi57sAwuykEGW6-SSFQuRCd9_LVkYnhq9dHVAZxpeiB9RPu2J6NSFPRXomOsoTsPxbqGBcjIkvKo2Ra4ICF9BqWZ1GbUlcu7qrhTdfu0aLX9Yf9v97kNZsSIaaDYBi6w5hMrK9S6rpPGaHf8nPOa7aMnqSa0YPtC1CHKnCdbVY2VpRSbOuJdhylsRhslFFgvI33NLaIQZ6WFwq4V1bTLA3AeE_f-v"/>
+</div>
+<div class="p-4 flex flex-col gap-2 flex-grow">
+<div class="flex justify-between items-center font-mono-label text-mono-label">
+<span class="text-data-node-magenta">FINANCE</span>
+<span class="text-on-surface-variant">4 MIN READ</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface line-clamp-2">Algorithmic Trading Patterns in Post-Crisis Markets</h3>
+<div class="mt-auto pt-4 flex items-center justify-between font-ui-label-sm text-ui-label-sm border-t border-border-subtle">
+<span class="text-on-surface-variant">By E. Vance</span>
+<span class="text-on-surface-variant flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">visibility</span> 12.4K</span>
+</div>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="bg-surface-raised border border-border-subtle flex flex-col group hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="h-48 border-b border-border-subtle overflow-hidden">
+<img class="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity duration-300 group-hover:scale-105 transform" data-alt="Close up of a complex microchip or circuit board. Dark aesthetic with structural, minimalist geometry. Emphasizes hardware, technology, and precision engineering." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnr9jJwj6CrZF4YjLQn-8DHwj4yfDdx_wOv9j0VLxq-YTEusgbJ-eCVz8tEmPO2vA1CBsRrdwvpvI19uIX4xnhZvK8E5p9gx9YMgaxqLe7tHJ4HopvcMkBz1JZZ3AUcsebhav55t8wQhsNmkgHrpmptU30qGJCXhOdHM8BM37w4x1wfUN9gFEJjeW5FFH-3UR6vyaXzIkI_M4lJbccaq2XJVFc7ljV-eRStl0hkyCKuBEQT1ANf2cA4cdoOqQA7fOnzg4ROMFzeJel"/>
+</div>
+<div class="p-4 flex flex-col gap-2 flex-grow">
+<div class="flex justify-between items-center font-mono-label text-mono-label">
+<span class="text-primary">HARDWARE</span>
+<span class="text-on-surface-variant">8 MIN READ</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface line-clamp-2">Silicon Scarcity: The New Geopolitical Chessboard</h3>
+<div class="mt-auto pt-4 flex items-center justify-between font-ui-label-sm text-ui-label-sm border-t border-border-subtle">
+<span class="text-on-surface-variant">By M. Lin</span>
+<span class="text-on-surface-variant flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">visibility</span> 8.2K</span>
+</div>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="bg-surface-raised border border-border-subtle flex flex-col group hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="h-48 border-b border-border-subtle overflow-hidden relative">
+<img class="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity duration-300 group-hover:scale-105 transform" data-alt="A sleek, dark server room with rows of racks. Glowing indicator lights in blue and red. Represents cloud infrastructure and secure data silos. Clean, structural composition." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD3gOG1Kbz1h27JA5b07UiqSUTiR5hJwRurL_ne_4ytJ6Vu-oJ7r7fNQeLSgOAHGbl_oglnfldiOrC1eajY__e382PbJM5Hw8t7dD1esT-_sGcdQqkl5-1CxT7mmPXMPvZMdq0_l3_OOv19zAMolazJso5bG2ipJUO5IcsD5ktJ-tDud2yq27EUm1yxl9LzIcDfHXaEjIu9KyJG-rAksm8cYO0hPkKQ5HbrLExd02NexE49o_DOYwA-DoKjOWPcH-Dm5jRtz5DbEGxh"/>
+<div class="absolute top-2 right-2 bg-surface-container border border-border-subtle px-2 py-0.5 text-status-stage-alert font-mono-label text-mono-label flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-status-stage-alert"></span> LIVE
+                    </div>
+</div>
+<div class="p-4 flex flex-col gap-2 flex-grow">
+<div class="flex justify-between items-center font-mono-label text-mono-label">
+<span class="text-secondary">INFRASTRUCTURE</span>
+<span class="text-on-surface-variant">6 MIN READ</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface line-clamp-2">Decentralizing the Farm: Node Operations at Scale</h3>
+<div class="mt-auto pt-4 flex items-center justify-between font-ui-label-sm text-ui-label-sm border-t border-border-subtle">
+<span class="text-on-surface-variant">By System Team</span>
+<span class="text-on-surface-variant flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">visibility</span> 45.1K</span>
+</div>
+</div>
+</article>
+</section>
+<!-- 70/30 Split Layout -->
+<div class="flex flex-col lg:flex-row gap-8">
+<!-- Main Content (70%) -->
+<div class="w-full lg:w-[70%] flex flex-col gap-6">
+<div class="border-b border-border-subtle pb-2 mb-4">
+<h2 class="font-mono-label text-mono-label text-on-surface-variant tracking-widest">LATEST INTELLIGENCE</h2>
+</div>
+<!-- Feed Item 1 -->
+<article class="flex flex-col sm:flex-row gap-4 border-b border-border-subtle pb-6 group cursor-pointer">
+<div class="w-full sm:w-48 h-32 flex-shrink-0 border border-border-subtle overflow-hidden">
+<img class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" data-alt="Close up of raw data points on a digital screen. Rows of numbers and charts in a dark mode environment. Emphasizes quantitative analysis and data science aesthetics." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvUoJvq9vl5HXcWyuaXJGrZbzErbjCIkHe-4KpDQI6JhBqDll82J-hNsM3ap8PBCa401iENDMfPBmchnT5WpVU7MoqY_-9u-DGgKiL5aAx0bWh_tRlUhRirGIu9oFgfuLCWHHjNuWZD3bQcVFMPkeIiasqrxCMch41FVOkCCvMOgqcMs5u1tV3xwI1kglhT6MsBkZogUf5oGtw5_HHMVk0rFK9B0W_CxeqdnNM8q_tDld19nwxNDY7W7X6z2P-Bl8Syc7PZjxIfgBV"/>
+</div>
+<div class="flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-2 font-mono-label text-mono-label mb-1">
+<span class="text-data-node-cyan">DATA SCIENCE</span>
+<span class="text-border-subtle">|</span>
+<span class="text-on-surface-variant">2 HOURS AGO</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">Quantifying Narrative: NLP in the Media Sector</h3>
+<p class="font-article-body text-article-body text-on-surface-variant text-sm mt-2 line-clamp-2">How natural language processing is being utilized to track shifts in public sentiment across decentralized networks.</p>
+</div>
+</div>
+</article>
+<!-- Feed Item 2 -->
+<article class="flex flex-col sm:flex-row gap-4 border-b border-border-subtle pb-6 group cursor-pointer">
+<div class="w-full sm:w-48 h-32 flex-shrink-0 border border-border-subtle overflow-hidden bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-border-subtle text-4xl">description</span>
+</div>
+<div class="flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-2 font-mono-label text-mono-label mb-1">
+<span class="text-on-surface">REPORT</span>
+<span class="text-border-subtle">|</span>
+<span class="text-on-surface-variant">5 HOURS AGO</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">Q3 Protocol Efficiency Metrics</h3>
+<p class="font-article-body text-article-body text-on-surface-variant text-sm mt-2 line-clamp-2">A comprehensive breakdown of network latency, throughput, and node operator compensation for the previous quarter.</p>
+</div>
+</div>
+</article>
+</div>
+<!-- Sidebar / Inspector (30%) -->
+<aside class="w-full lg:w-[30%] flex flex-col gap-6">
+<!-- Entities Widget -->
+<div class="bg-surface-raised border border-border-subtle p-4">
+<h3 class="font-mono-label text-mono-label text-on-surface-variant mb-4 flex items-center gap-2 border-b border-border-subtle pb-2">
+<span class="material-symbols-outlined text-[14px]">hub</span> TOP ENTITIES
+                    </h3>
+<ul class="flex flex-col gap-3 font-ui-label-sm text-ui-label-sm">
+<li class="flex justify-between items-center group cursor-pointer">
+<span class="text-on-surface group-hover:text-primary transition-colors">OpenAI</span>
+<div class="flex items-center gap-2">
+<div class="w-16 h-1 bg-surface-container overflow-hidden"><div class="h-full bg-data-node-cyan w-[92%]"></div></div>
+<span class="text-on-surface-variant font-mono-label">92</span>
+</div>
+</li>
+<li class="flex justify-between items-center group cursor-pointer">
+<span class="text-on-surface group-hover:text-primary transition-colors">Federal Reserve</span>
+<div class="flex items-center gap-2">
+<div class="w-16 h-1 bg-surface-container overflow-hidden"><div class="h-full bg-data-node-magenta w-[85%]"></div></div>
+<span class="text-on-surface-variant font-mono-label">85</span>
+</div>
+</li>
+<li class="flex justify-between items-center group cursor-pointer">
+<span class="text-on-surface group-hover:text-primary transition-colors">TSMC</span>
+<div class="flex items-center gap-2">
+<div class="w-16 h-1 bg-surface-container overflow-hidden"><div class="h-full bg-primary w-[78%]"></div></div>
+<span class="text-on-surface-variant font-mono-label">78</span>
+</div>
+</li>
+</ul>
+</div>
+<!-- Newsletter CTA -->
+<div class="bg-primary/10 border border-primary p-6 flex flex-col gap-4 text-center">
+<span class="material-symbols-outlined text-primary text-3xl mx-auto">mail</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">The Daily Synthesis</h3>
+<p class="font-ui-label-sm text-ui-label-sm text-on-surface-variant">Executive summary of the day's critical data, delivered to your inbox.</p>
+<div class="flex flex-col gap-2 mt-2">
+<input class="bg-surface-raised border border-border-subtle px-3 py-2 text-ui-label-sm text-on-surface focus:border-primary outline-none text-center" placeholder="operator@domain.com" type="email"/>
+<button class="bg-primary text-terminal-black font-ui-label-sm text-ui-label-sm font-bold py-2 hover:bg-primary-fixed transition-colors">SUBSCRIBE</button>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full py-12 border-t border-border-subtle bg-terminal-black dark:bg-terminal-black max-w-article-max-width mx-auto flex flex-col items-center gap-4 text-center mt-12">
+<div class="font-headline-md text-headline-md text-primary mb-2">SIMIS MediaFarm</div>
+<div class="flex gap-6 font-ui-label-sm text-ui-label-sm text-on-surface-variant">
+<a class="hover:text-on-surface transition-colors" href="#">Terms</a>
+<a class="hover:text-on-surface transition-colors" href="#">Privacy</a>
+<a class="hover:text-on-surface transition-colors" href="#">Ethics</a>
+<a class="hover:text-on-surface transition-colors" href="#">API</a>
+<a class="hover:text-on-surface transition-colors" href="#">Contact</a>
+</div>
+<div class="font-article-body text-article-body text-on-surface-variant text-sm mt-4">
+            © 2024 SIMIS MediaFarm. Sovereign Operator Protocol.
+        </div>
+</footer>
+</body></html>

@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Post } from '@simis/shared';
 import PostCard from '../../../components/PostCard';
+import { registry } from '@/lib/registryClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,17 +18,31 @@ export default async function TagPage({ params }: PageProps) {
   let relatedTopics: string[] = [];
 
   try {
-    const res = await fetch(`http://127.0.0.1:4000/api/mvp/tag/${tag}`, { cache: 'no-store' });
-    if (res.ok) {
-      const data = await res.json();
+    const [postsRes, taxonomyRes] = await Promise.allSettled([
+      fetch(`http://127.0.0.1:4000/api/mvp/tag/${tag}`, { cache: 'no-store' }),
+      registry.getTaxonomy()
+    ]);
+
+    if (postsRes.status === 'fulfilled' && postsRes.value.ok) {
+      const data = await postsRes.value.json();
       posts = data.posts || [];
     }
     
-    // In a real app, related topics would be fetched from the Topic Cluster Engine
-    // For V1.2 Frontend mock, we'll generate some static related topics based on the tag
-    relatedTopics = [`${decodedTag} Trends`, `Future of ${decodedTag}`, `Applied ${decodedTag}`];
+    if (taxonomyRes.status === 'fulfilled' && taxonomyRes.value) {
+      const taxonomies = Array.isArray(taxonomyRes.value) ? taxonomyRes.value : [taxonomyRes.value];
+      const tagRegistry = taxonomies.find(t => t.key === 'trending_tags');
+      if (tagRegistry?.schema) {
+        try {
+          const parsed = JSON.parse(tagRegistry.schema);
+          const allTags = parsed.tags || [];
+          relatedTopics = allTags.map((t: any) => t.name).filter((t: string) => t.toLowerCase() !== decodedTag.toLowerCase()).slice(0, 5);
+        } catch (e) {
+          console.error("Failed to parse taxonomy schema for related topics");
+        }
+      }
+    }
   } catch (err) {
-    console.error(`Error fetching posts for tag ${tag}:`, err);
+    console.error(`Error fetching data for tag ${tag}:`, err);
   }
 
   // Segment posts based on V1.2 Architecture
@@ -41,7 +56,7 @@ export default async function TagPage({ params }: PageProps) {
   }
 
   return (
-    <div className="reader-container" style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 20px' }}>
+    <div className="reader-container" style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 20px', minHeight: '100vh' }}>
       
       {/* 1. Topic Header */}
       <header style={styles.header}>
@@ -83,26 +98,36 @@ export default async function TagPage({ params }: PageProps) {
                 ))}
               </div>
             ) : (
-              <p style={{ color: 'var(--text-secondary)' }}>No other articles published in this cluster yet.</p>
+              <div style={{ border: '1px dashed var(--border-color)', padding: '40px', textAlign: 'center', color: 'var(--text-secondary)', borderRadius: '8px' }}>
+                Awaiting Content Ingestion Pipeline...
+              </div>
             )}
           </section>
         </div>
 
         {/* Sidebar */}
         <aside style={styles.sidebar}>
-          {/* 4. Related Topics */}
-          <div className="glass-container" style={styles.sidebarCard}>
-            <h3 style={styles.sidebarTitle}>Related Clusters</h3>
-            <ul style={styles.relatedList}>
-              {relatedTopics.map(topic => (
-                <li key={topic} style={styles.relatedItem}>
-                  <Link href={`/tag/${encodeURIComponent(topic)}`} style={styles.relatedLink}>
-                    {topic}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* 4. Related Topics (Dynamic) */}
+          {relatedTopics.length > 0 ? (
+            <div className="glass-container" style={styles.sidebarCard}>
+              <h3 style={styles.sidebarTitle}>Related Clusters</h3>
+              <ul style={styles.relatedList}>
+                {relatedTopics.map(topic => (
+                  <li key={topic} style={styles.relatedItem}>
+                    <Link href={`/tag/${encodeURIComponent(topic)}`} style={styles.relatedLink}>
+                      {topic}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+             <div className="glass-container" style={{...styles.sidebarCard as any, borderStyle: 'dashed', textAlign: 'center'}}>
+               <span style={{ fontSize: '10px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', letterSpacing: '0.1em' }}>
+                 NO RELATED CLUSTERS FOUND
+               </span>
+             </div>
+          )}
           
           <div className="glass-container" style={styles.sidebarCard}>
             <h3 style={styles.sidebarTitle}>Follow {decodedTag}</h3>

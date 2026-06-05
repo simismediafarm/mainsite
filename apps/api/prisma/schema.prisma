@@ -1,10 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "../../../node_modules/.prisma/client"
+  provider        = "prisma-client-js"
+  output          = "../../../node_modules/.prisma/client"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
+  schemas  = ["public", "registry", "entity", "attention", "analytics", "integration"]
 }
 
 // ----------------------------------------------------------------------------
@@ -18,35 +20,38 @@ model User {
   emailVerified DateTime?
   image         String?
   role          String    @default("member") // visitor, member, contributor, author, editor, publisher, admin
-  
-  accounts      Account[]
-  sessions      Session[]
-  profile       Profile?
-  
+
+  accounts Account[]
+  sessions Session[]
+  profile  Profile?
+
   workspaceMembers   WorkspaceMember[]
   publicationMembers PublicationMember[]
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("public")
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  
-  access_token       String?  
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@schema("public")
 }
 
 model Session {
@@ -55,6 +60,8 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@schema("public")
 }
 
 model VerificationToken {
@@ -63,6 +70,7 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+  @@schema("public")
 }
 
 // ----------------------------------------------------------------------------
@@ -75,12 +83,14 @@ model Profile {
   name      String
   role      String   @default("author")
   bio       String?
-  avatar    String?  
+  avatar    String?
   createdAt DateTime @default(now())
-  
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  posts     Post[]
-  metrics   AuthorMetric?
+
+  user    User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  posts   Post[]
+  metrics AuthorMetric?
+
+  @@schema("public")
 }
 
 // ----------------------------------------------------------------------------
@@ -88,51 +98,60 @@ model Profile {
 // ----------------------------------------------------------------------------
 
 model Workspace {
-  id          String   @id @default(uuid())
-  name        String
-  slug        String   @unique
-  type        String   @default("personal") // personal, publication, organization
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  type      String   @default("personal") // personal, publication, organization
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  members     WorkspaceMember[]
-  publications Publication[]
+  members              WorkspaceMember[]
+  publications         Publication[]
+  systemConfigurations SystemConfiguration[]
+  rankingProfiles      RankingProfile[]
+  revenueRules         RevenueRule[]
+
+  @@schema("public")
 }
 
 model WorkspaceMember {
-  id          String   @id @default(uuid())
+  id          String @id @default(uuid())
   workspaceId String
   userId      String
-  role        String   @default("member") // admin, editor, contributor, member
+  role        String @default("member") // admin, editor, contributor, member
 
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, userId])
+  @@schema("public")
 }
 
 model Publication {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   workspaceId String
   name        String
-  slug        String   @unique
+  slug        String  @unique
   description String?
-  
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  members     PublicationMember[]
-  posts       Post[]
+
+  workspace Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members   PublicationMember[]
+  posts     Post[]
+
+  @@schema("public")
 }
 
 model PublicationMember {
-  id            String   @id @default(uuid())
+  id            String @id @default(uuid())
   publicationId String
   userId        String
-  role          String   @default("author")
+  role          String @default("author")
 
-  publication   Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  publication Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([publicationId, userId])
+  @@schema("public")
 }
 
 // ----------------------------------------------------------------------------
@@ -140,192 +159,491 @@ model PublicationMember {
 // ----------------------------------------------------------------------------
 
 model Post {
-  id             String   @id @default(uuid())
-  title          String
-  slug           String   @unique @default(uuid())
-  content        String
-  excerpt        String?
-  
-  authorId       String   // References Profile (Legacy Author)
-  publicationId  String?  // References Publication (V1.4)
-  
-  status         String   @default("draft") // draft, pending_review, approved, published, featured, archived
-  tier           String   @default("tier_1") // tier_1 (UGC), tier_2 (Curated), tier_3 (Programmatic)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  
-  views          Int      @default(0)
-  likes          Int      @default(0)
-  clicks         Int      @default(0)
-  ctr            Float    @default(0.0)
+  id      String  @id @default(uuid())
+  title   String
+  slug    String  @unique @default(uuid())
+  content String
+  excerpt String?
 
-  rpmReal        Float    @default(0.0)
-  cpmReal        Float    @default(0.0)
-  revenueTotal   Float    @default(0.0)
+  authorId      String // References Profile (Legacy Author)
+  publicationId String? // References Publication (V1.4)
 
-  editorialBoost Int      @default(0)
-  trustScore     Int      @default(50)
+  status    String   @default("draft") // draft, pending_review, approved, published, featured, archived
+  tier      String   @default("tier_1") // tier_1 (UGC), tier_2 (Curated), tier_3 (Programmatic)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  author         Profile      @relation(fields: [authorId], references: [id])
-  publication    Publication? @relation(fields: [publicationId], references: [id])
-  
-  adEvents       AdEvent[]
-  tags           Tag[]
-  
+  views  Int   @default(0)
+  likes  Int   @default(0)
+  clicks Int   @default(0)
+  ctr    Float @default(0.0)
+
+  rpmReal      Float @default(0.0)
+  cpmReal      Float @default(0.0)
+  revenueTotal Float @default(0.0)
+
+  editorialBoost Int @default(0)
+  trustScore     Int @default(50)
+
+  author      Profile      @relation(fields: [authorId], references: [id])
+  publication Publication? @relation(fields: [publicationId], references: [id])
+
+  adEvents AdEvent[]
+  tags     Tag[]
+
   seoMetadata        SeoMetadata?
   clusterMemberships ClusterMembership[]
   distributionEvents DistributionEvent[]
   affiliateLinks     AffiliateLink[]
   metrics            ContentMetric?
+
+  @@schema("public")
 }
 
 model Tag {
   id    String @id @default(uuid())
   name  String @unique
   posts Post[]
+
+  @@schema("public")
 }
 
 model AdEvent {
   id           String   @id @default(uuid())
   postId       String
-  type         String   // impression, click, conversion
-  provider     String   // GoogleAdManager, Affiliate
+  type         String // impression, click, conversion
+  provider     String // GoogleAdManager, Affiliate
   impression   Boolean  @default(false)
   click        Boolean  @default(false)
   conversion   Boolean  @default(false)
   revenueValue Float    @default(0.0)
   timestamp    DateTime @default(now())
 
-  post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@schema("analytics")
 }
 
 model RssSource {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   name          String
-  url           String   @unique
+  url           String    @unique
   category      String
-  fetchInterval Int      @default(30) // in minutes
+  fetchInterval Int       @default(30) // in minutes
   lastFetched   DateTime?
-  status        String   @default("active") // active, paused, error
+  status        String    @default("active") // active, paused, error
+
+  @@schema("integration")
 }
 
 model RssEntry {
-  id            String   @id @default(uuid())
-  sourceId      String
-  title         String
-  url           String   @unique
-  publishedAt   DateTime
-  content       String?
-  status        String   @default("pending") // pending, processed, rejected
+  id          String   @id @default(uuid())
+  sourceId    String
+  title       String
+  url         String   @unique
+  publishedAt DateTime
+  content     String?
+  status      String   @default("pending") // pending, processed, rejected
+
+  @@schema("integration")
 }
 
 model ApiSource {
-  id            String   @id @default(uuid())
-  provider      String   @unique
-  endpoint      String
-  category      String
-  status        String   @default("active")
+  id       String @id @default(uuid())
+  provider String @unique
+  endpoint String
+  category String
+  status   String @default("active")
+
+  @@schema("integration")
 }
 
 model ContentCandidate {
   id             String   @id @default(uuid())
-  sourceType     String   // rss, api, webhook, editorial
+  sourceType     String // rss, api, webhook, editorial
   sourceUrl      String?
   title          String
   rawContent     String
   extractedTags  String?
-  normalizedData String?  // JSON string
+  normalizedData String? // JSON string
   status         String   @default("queued") // queued, enriched, published, rejected
   createdAt      DateTime @default(now())
+
+  @@schema("integration")
 }
 
 model TopicCluster {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  slug        String   @unique
+  id          String  @id @default(uuid())
+  name        String  @unique
+  slug        String  @unique
   description String?
-  parent      String?  
-  
+  parent      String?
+
   memberships ClusterMembership[]
   metrics     TopicMetric?
+
+  @@schema("public")
 }
 
 model ClusterMembership {
-  id          String   @id @default(uuid())
-  postId      String
-  clusterId   String
-  role        String   @default("spoke") // hub, spoke
+  id        String @id @default(uuid())
+  postId    String
+  clusterId String
+  role      String @default("spoke") // hub, spoke
 
-  post        Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
-  cluster     TopicCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  post    Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  cluster TopicCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
 
   @@unique([postId, clusterId])
+  @@schema("public")
 }
 
 model SeoMetadata {
-  id             String   @id @default(uuid())
-  postId         String   @unique
+  id             String  @id @default(uuid())
+  postId         String  @unique
   seoTitle       String?
   seoDescription String?
   canonicalUrl   String?
-  openGraph      String?  // JSON string
-  twitterCard    String?  // JSON string
-  jsonLd         String?  // JSON string
+  openGraph      String? // JSON string
+  twitterCard    String? // JSON string
+  jsonLd         String? // JSON string
 
-  post           Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@schema("public")
 }
 
 model DistributionEvent {
-  id           String   @id @default(uuid())
-  postId       String
-  channel      String   // sitemap, rss, social, newsletter
-  status       String   @default("success") // success, failed
-  timestamp    DateTime @default(now())
+  id        String   @id @default(uuid())
+  postId    String
+  channel   String // sitemap, rss, social, newsletter
+  status    String   @default("success") // success, failed
+  timestamp DateTime @default(now())
 
-  post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@schema("analytics")
 }
 
 model AffiliateLink {
-  id           String   @id @default(uuid())
+  id           String @id @default(uuid())
   postId       String
-  provider     String   // amazon, impact, cj
+  provider     String // amazon, impact, cj
   productUrl   String
   affiliateUrl String
-  clicks       Int      @default(0)
-  conversions  Int      @default(0)
-  revenue      Float    @default(0.0)
+  clicks       Int    @default(0)
+  conversions  Int    @default(0)
+  revenue      Float  @default(0.0)
 
-  post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@schema("analytics")
 }
 
 model ContentMetric {
-  id              String   @id @default(uuid())
-  postId          String   @unique
-  sessionDepthAvg Float    @default(0.0)
-  returningUsers  Int      @default(0)
-  bounceRate      Float    @default(0.0)
-  timeOnPageAvg   Float    @default(0.0)
+  id              String @id @default(uuid())
+  postId          String @unique
+  sessionDepthAvg Float  @default(0.0)
+  returningUsers  Int    @default(0)
+  bounceRate      Float  @default(0.0)
+  timeOnPageAvg   Float  @default(0.0)
 
-  post            Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@schema("analytics")
 }
 
 model AuthorMetric {
-  id              String   @id @default(uuid())
-  authorId        String   @unique
-  totalReads      Int      @default(0)
-  totalRevenue    Float    @default(0.0)
-  followerCount   Int      @default(0)
+  id            String @id @default(uuid())
+  authorId      String @unique
+  totalReads    Int    @default(0)
+  totalRevenue  Float  @default(0.0)
+  followerCount Int    @default(0)
 
-  profile         Profile  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  profile Profile @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@schema("analytics")
 }
 
 model TopicMetric {
-  id              String   @id @default(uuid())
-  clusterId       String   @unique
-  totalViews      Int      @default(0)
-  organicTraffic  Int      @default(0)
-  clusterRevenue  Float    @default(0.0)
-  rankingKeywords Int      @default(0)
+  id              String @id @default(uuid())
+  clusterId       String @unique
+  totalViews      Int    @default(0)
+  organicTraffic  Int    @default(0)
+  clusterRevenue  Float  @default(0.0)
+  rankingKeywords Int    @default(0)
 
-  cluster         TopicCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  cluster TopicCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+
+  @@schema("analytics")
+}
+
+// ----------------------------------------------------------------------------
+// PHASE 1: FOUNDATION & REGISTRIES
+// ----------------------------------------------------------------------------
+
+model FeatureFlag {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  enabled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("registry")
+}
+
+model NavigationRegistry {
+  id        String   @id @default(uuid())
+  key       String   @unique // e.g., 'header_menu', 'sidebar_menu'
+  schema    String // JSON string
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("registry")
+}
+
+model TaxonomyRegistry {
+  id        String   @id @default(uuid())
+  key       String   @unique // e.g., 'categories', 'tags'
+  schema    String // JSON string
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("registry")
+}
+
+model PageRegistry {
+  id        String   @id @default(uuid())
+  slug      String   @unique // e.g., '/privacy', '/terms'
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("registry")
+}
+
+model WidgetRegistry {
+  id        String   @id @default(uuid())
+  key       String   @unique // e.g., 'newsletter_sidebar'
+  schema    String // JSON string
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("registry")
+}
+
+model RouteRegistry {
+  id        String   @id @default(uuid())
+  path      String   @unique // e.g., '/topic/ai'
+  target    String // target component or internal resolution
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("registry")
+}
+
+// ----------------------------------------------------------------------------
+// PHASE 3A: ENGINE REGISTRIES & OBSERVABILITY
+// ----------------------------------------------------------------------------
+
+model EngineRegistry {
+  id            String   @id @default(uuid())
+  slug          String   @unique // e.g., 'ranking-engine', 'integrity-engine'
+  name          String
+  version       String   @default("1.0.0")
+  status        String   @default("inactive") // active, inactive, degraded, failing
+  isEnabled     Boolean  @default(false)
+  configuration Json? // JSONB
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  eventEnvelopes EventEnvelope[]
+  pipelineHealth PipelineHealth?
+
+  @@schema("registry")
+}
+
+model SystemConfiguration {
+  id          String     @id @default(uuid())
+  key         String     @unique
+  value       Json // JSONB
+  scope       String     @default("global") // global, engine, tenant
+  environment String     @default("production")
+  workspaceId String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@schema("registry")
+}
+
+model EventEnvelope {
+  eventId   String         @id @default(uuid())
+  traceId   String
+  engineId  String
+  entityId  String?
+  eventType String
+  status    String
+  source    String?
+  payload   Json // JSONB
+  timestamp DateTime       @default(now())
+  engine    EngineRegistry @relation(fields: [engineId], references: [id])
+
+  @@index([traceId])
+  @@index([engineId])
+  @@schema("analytics")
+}
+
+model PipelineHealth {
+  id              String    @id @default(uuid())
+  engineId        String    @unique
+  status          String
+  queueDepth      Int       @default(0)
+  errorRate       Float     @default(0.0)
+  throughput      Float     @default(0.0)
+  lastExecutionAt DateTime?
+
+  engine EngineRegistry @relation(fields: [engineId], references: [id])
+
+  @@schema("analytics")
+}
+
+// ----------------------------------------------------------------------------
+// PHASE 3B: RANKING ARBITRATION
+// ----------------------------------------------------------------------------
+
+model RankingProfile {
+  id          String     @id @default(uuid())
+  name        String // default, homepage, search, topic
+  version     Int        @default(1)
+  isActive    Boolean    @default(false)
+  weights     Json // JSONB representing weighting factors
+  workspaceId String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([name, version, workspaceId])
+  @@index([workspaceId])
+  @@schema("registry")
+}
+
+model RankingFactor {
+  id          String  @id @default(uuid())
+  slug        String  @unique // e.g., attention_velocity
+  type        String // attention, entity_authority, engagement
+  description String?
+  isActive    Boolean @default(true)
+
+  @@schema("registry")
+}
+
+model RankingDecisionLog {
+  id        String   @id @default(uuid())
+  postId    String
+  profileId String
+  score     Float
+  factors   Json // JSONB containing applied weights and base scores
+  timestamp DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+// ----------------------------------------------------------------------------
+// PHASE 3C: ENGAGEMENT INTEGRITY
+// ----------------------------------------------------------------------------
+
+model EngagementEvent {
+  id        String   @id @default(uuid())
+  sessionId String
+  eventType String // page_view, session_start, scroll_depth, cta_click
+  payload   Json // JSONB
+  timestamp DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model IntegritySignal {
+  id                         String   @id @default(uuid())
+  sessionId                  String   @unique
+  trustedEngagementScore     Float    @default(0.0)
+  fraudProbability           Float    @default(0.0)
+  botDetectionSignal         Float    @default(0.0)
+  engagementQualityScore     Float    @default(0.0)
+  sessionQualityScore        Float    @default(0.0)
+  attentionAuthenticityScore Float    @default(0.0)
+  timestamp                  DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+// ----------------------------------------------------------------------------
+// PHASE 3D: REVENUE RULE ENGINE
+// ----------------------------------------------------------------------------
+
+model RevenueRule {
+  id          String     @id @default(uuid())
+  name        String
+  condition   Json // JSONB Condition
+  action      Json // JSONB Action
+  isActive    Boolean    @default(false)
+  priority    Int        @default(0)
+  workspaceId String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@schema("registry")
+}
+
+// ----------------------------------------------------------------------------
+// PHASE 4: ENTITY INTELLIGENCE (PRE-SETUP)
+// ----------------------------------------------------------------------------
+
+model EntityNode {
+  id         String   @id @default(uuid())
+  entityType String
+  name       String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@schema("entity")
+}
+
+model EntityRelationship {
+  id               String @id @default(uuid())
+  sourceId         String
+  targetId         String
+  relationshipType String
+  weight           Float  @default(1.0)
+
+  @@schema("entity")
+}
+
+// ----------------------------------------------------------------------------
+// PHASE 3E: MISSING ANALYTICS / EXECUTION LOGS
+// ----------------------------------------------------------------------------
+
+model RankingSnapshot {
+  id         String   @id @default(uuid())
+  profileId  String
+  entityType String
+  snapshotAt DateTime @default(now())
+  payload    Json
+
+  @@schema("analytics")
+}
+
+model RevenueExecution {
+  id              String   @id @default(uuid())
+  ruleId          String
+  input           Json
+  output          Json
+  executionTimeMs Int
+  createdAt       DateTime @default(now())
+
+  @@schema("analytics")
 }

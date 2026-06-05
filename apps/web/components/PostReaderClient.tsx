@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Post, SSEEvent } from '@simis/shared';
 import MarkdownRenderer from './MarkdownRenderer';
 import { useEventSourceFeed } from '../lib/sse';
-import { ThumbsUp, Eye, Share2 } from 'lucide-react';
+import { ThumbsUp, Eye, Share2, Award, Calendar, Clock } from 'lucide-react';
 
 interface PostReaderClientProps {
   initialPost: Post;
@@ -71,12 +71,12 @@ export default function PostReaderClient({ initialPost, initialMonetization }: P
     return (
       <div 
         onClick={() => handleAdClick(slotType)}
-        style={{...styles.adSlot, cursor: 'pointer'}} 
+        className="my-8 border border-[#222222] bg-[#0e0e0e] hover:border-[#00E5FF]/40 transition-colors p-6 text-center cursor-pointer rounded-sm"
         title="Click to simulate CTR boost"
       >
-        <span style={{color: '#8b5cf6', fontSize: '12px', display: 'block'}}>SPONSORED BY {res.winningBidder.toUpperCase()}</span>
-        <div>[ {slotType.replace('_', ' ').toUpperCase()} ]</div>
-        <span style={{color: '#10b981', fontSize: '11px', display: 'block'}}>Bid: {(res.winningBidValue / 100).toFixed(4)} USD</span>
+        <span className="text-[#FF2D55] font-mono text-[10px] tracking-wider block mb-1">SPONSORED BY {res.winningBidder.toUpperCase()}</span>
+        <div className="font-bold text-[#e5e2e1] text-xs uppercase my-2 tracking-widest">[ {slotType.replace('_', ' ')} ]</div>
+        <span className="text-[#32D74B] font-mono text-[10px]">Bid Value: {(res.winningBidValue / 100).toFixed(4)} USD</span>
       </div>
     );
   };
@@ -132,221 +132,187 @@ export default function PostReaderClient({ initialPost, initialMonetization }: P
   });
 
   return (
-    <div className="reader-container fade-in" style={{ marginTop: '20px' }}>
-      {/* Scroll Progress Bar */}
-      <div className="progress-bar-container">
-        <div className="progress-bar" style={{ width: `${scrollProgress}%` }} />
+    <div className="max-w-[1440px] mx-auto px-6 py-8 flex gap-10 bg-[#131313] text-[#e5e2e1] font-sans relative">
+      {/* Progress Scroll Indicator */}
+      <div className="fixed top-0 left-0 w-full h-0.5 bg-transparent z-50">
+        <div className="h-full bg-[#00E5FF] transition-all duration-100" style={{ width: `${scrollProgress}%` }}></div>
       </div>
 
-      {/* Article Header */}
-      <header style={styles.header}>
-        <div style={styles.tagsRow}>
-          {post.tags.map((tag) => (
-            <Link key={tag} href={`/tag/${tag}`} className="tag-pill">
-              {tag}
-            </Link>
-          ))}
-        </div>
-        <h1 className="article-title">{post.title}</h1>
-        <p style={styles.excerpt}>{post.excerpt}</p>
-
-        {/* Author Block */}
-        <div style={styles.authorBlock}>
-          {post.author?.avatar && (
-            <img 
-              src={post.author.avatar} 
-              alt={post.author.name} 
-              style={styles.avatar} 
-            />
-          )}
-          <div style={styles.authorMeta}>
-            <Link href={`/author/${post.authorId}`} style={styles.authorName}>
-              {post.author?.name || 'Writer'}
-            </Link>
-            <div style={styles.metaRow}>
-              <span>{formattedDate}</span>
-              <span>•</span>
-              <span>{post.readingTime} min read</span>
-              <span>•</span>
-              <span style={{ display: 'inline-flex', alignItems: 'center' }}><Eye size={14} style={{ marginRight: 4 }} /> {post.views} views</span>
-              {post.rpmReal !== undefined && post.rpmReal > 0 && (
-                <>
-                  <span>•</span>
-                  <span style={styles.rpmBadge}>${post.rpmReal.toFixed(2)} RPM</span>
-                </>
-              )}
+      {/* Left Sidebar: Outline */}
+      <aside className="hidden xl:block w-[200px] shrink-0 sticky top-20 self-start">
+        <div className="space-y-6">
+          <div className="flex flex-col gap-2">
+            <span className="font-mono text-[9px] tracking-wider text-[#849396] uppercase">Outline</span>
+            <nav className="flex flex-col gap-3 text-xs text-[#bac9cc]">
+              <a className="text-[#00E5FF] hover:text-[#00daf3]" href="#intro">01 Introduction</a>
+              <a className="hover:text-[#e5e2e1] transition-colors" href="#core-metrics">02 Core Metrics</a>
+              <a className="hover:text-[#e5e2e1] transition-colors" href="#tooling">03 Hardware Protocol</a>
+              <a className="hover:text-[#e5e2e1] transition-colors" href="#faq">04 System FAQ</a>
+            </nav>
+          </div>
+          <div className="h-[1px] bg-[#222222]"></div>
+          <div className="flex flex-col gap-3">
+            <span className="font-mono text-[9px] tracking-wider text-[#849396] uppercase">Controls</span>
+            <div className="flex gap-4 text-[#bac9cc]">
+              <span className="material-symbols-outlined text-[16px] hover:text-[#00E5FF] cursor-pointer" onClick={handleShare}>share</span>
+              <span className="material-symbols-outlined text-[16px] hover:text-[#00E5FF] cursor-pointer">bookmark</span>
+              <span className="material-symbols-outlined text-[16px] hover:text-[#00E5FF] cursor-pointer">print</span>
             </div>
           </div>
         </div>
-      </header>
+      </aside>
 
-      {/* Top Banner Slot */}
-      {initialMonetization?.allowedSlots.includes('top_banner') && (
-        getAdForSlot('top_banner') || <div style={styles.adSlot}>[ LOADING AD: Top Banner ]</div>
-      )}
+      {/* Main Column */}
+      <div className="flex-1 max-w-[680px] mx-auto">
+        <header className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="px-2 py-0.5 bg-[#00E5FF] text-[#050505] font-mono text-[9px] font-bold rounded-sm">GUIDE</span>
+            <span className="text-[#bac9cc] font-mono text-[9px] uppercase">/ {post.tags?.[0] || 'AI'}</span>
+          </div>
 
-      {/* Main Content */}
-      <article style={{ margin: '30px 0' }}>
-        {initialMonetization?.allowedSlots.includes('inline_native') && (
-          getAdForSlot('inline_native') || <div style={styles.adSlotInline}>[ LOADING NATIVE AD ]</div>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-[#e5e2e1] mb-6 leading-tight font-serif">{post.title}</h1>
+          
+          <div className="flex items-center justify-between py-4 border-y border-[#222222] mb-6">
+            <div className="flex items-center gap-3">
+              {post.author?.avatar && (
+                <img src={post.author.avatar} alt={post.author.name} className="w-9 h-9 rounded-full border border-[#222222] object-cover" />
+              )}
+              <div>
+                <div className="flex items-center gap-2 text-xs font-bold text-[#e5e2e1]">
+                  <span>{post.author?.name}</span>
+                  <span className="flex items-center gap-0.5 text-[9px] font-bold text-[#32D74B] uppercase bg-[#32D74B]/10 px-1.5 py-0.5 rounded-full">
+                    <span className="material-symbols-outlined text-[11px] font-bold">verified</span> Expert Verified
+                  </span>
+                </div>
+                <div className="text-[10px] text-[#bac9cc] mt-0.5">{formattedDate}</div>
+              </div>
+            </div>
+            
+            <div className="text-right font-mono text-[10px] text-[#bac9cc] flex items-center gap-1.5">
+              <Clock size={12} />
+              <span>{post.readingTime || 12} MIN READ</span>
+            </div>
+          </div>
+
+          {/* Fact check alert */}
+          <div className="p-3 bg-[#1c1b1b] border border-[#222222] rounded flex items-center gap-3 text-xs text-[#bac9cc]">
+            <Award className="text-[#32D74B]" size={16} />
+            <span>Fact-checked by <span className="text-[#e5e2e1] font-semibold">Elena Rossi</span> • Oversight Committee</span>
+            <span className="material-symbols-outlined text-[#32D74B] ml-auto text-sm">check_circle</span>
+          </div>
+        </header>
+
+        {/* Hero image preview */}
+        <div className="w-full mb-8 rounded-sm overflow-hidden border border-[#222222] bg-[#121212]">
+          <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop" alt="Hero illustration" className="w-full h-auto opacity-75 grayscale hover:grayscale-0 transition-all duration-700" />
+          <div className="p-3 bg-[#0e0e0e] text-center text-[10px] text-[#bac9cc] italic border-t border-[#222222]">
+            Figure 1.0: Modular and precision-aligned structures maximize sovereign operator throughput.
+          </div>
+        </div>
+
+        {/* Monetization top ad */}
+        {initialMonetization?.allowedSlots.includes('top_banner') && (
+          getAdForSlot('top_banner')
         )}
-        <MarkdownRenderer content={post.content} />
-        {initialMonetization?.allowedSlots.includes('mid_article') && (
-          getAdForSlot('mid_article') || <div style={styles.adSlot}>[ LOADING AD: Mid Article ]</div>
-        )}
-      </article>
 
-      {/* End Card Slot */}
-      {initialMonetization?.allowedSlots.includes('end_card') && (
-        getAdForSlot('end_card') || <div style={styles.adSlot}>[ LOADING AD: End Card ]</div>
-      )}
+        {/* Article content with Source Serif 4 style body */}
+        <article className="prose prose-invert max-w-none text-base leading-relaxed text-[#e5e2e1] font-serif space-y-6" id="intro">
+          {initialMonetization?.allowedSlots.includes('inline_native') && (
+            getAdForSlot('inline_native')
+          )}
 
-      {/* Interaction Footer */}
-      <footer style={styles.interactionFooter}>
-        <div style={styles.interactionRow}>
+          <MarkdownRenderer content={post.content} />
+
+          {/* In-Article Affiliate block */}
+          <div className="my-10 border border-[#222222] bg-[#0e0e0e] overflow-hidden rounded-sm group">
+            <div className="flex flex-col md:flex-row">
+              <div className="w-full md:w-1/3 bg-[#121212] p-4 flex items-center justify-center">
+                <img alt="Product" className="max-h-40 group-hover:scale-103 transition-transform duration-500 rounded" src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400&auto=format&fit=crop" />
+              </div>
+              <div className="flex-1 p-6 flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-sm font-bold text-[#e5e2e1]">Matrix Operator Audio v4</h3>
+                    <div className="flex text-[#fec931] items-center">
+                      <span className="material-symbols-outlined text-xs">star</span>
+                      <span className="material-symbols-outlined text-xs">star</span>
+                      <span className="material-symbols-outlined text-xs">star</span>
+                      <span className="material-symbols-outlined text-xs">star</span>
+                      <span className="material-symbols-outlined text-xs">star_half</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mb-4 text-[10px]">
+                    <ul className="space-y-1 text-[#32D74B] font-mono">
+                      <li className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">check</span> Low Latency API</li>
+                      <li className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">check</span> Ergonomic Sound</li>
+                    </ul>
+                    <ul className="space-y-1 text-[#bac9cc] font-mono">
+                      <li className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">close</span> Premium Cost</li>
+                    </ul>
+                  </div>
+                </div>
+                <button className="w-full py-2 bg-[#00E5FF] text-[#050505] font-bold text-xs rounded hover:bg-[#00daf3] transition-colors flex items-center justify-center gap-1.5 uppercase tracking-wider">
+                  Check Price on Operator Protocol
+                  <span className="material-symbols-outlined text-xs font-bold">open_in_new</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {initialMonetization?.allowedSlots.includes('mid_article') && (
+            getAdForSlot('mid_article')
+          )}
+        </article>
+
+        {/* FAQ Accordion */}
+        <section className="mt-12 pt-8 border-t border-[#222222]" id="faq">
+          <h3 className="text-base font-bold text-[#e5e2e1] mb-4 uppercase tracking-wider font-mono">System FAQ</h3>
+          <div className="space-y-3">
+            <details className="group bg-[#121212] border border-[#222222] rounded-sm">
+              <summary className="list-none p-4 flex justify-between items-center cursor-pointer text-xs text-[#e5e2e1] font-bold select-none">
+                What constitutes a "Sovereign Operator" workflow?
+                <span className="material-symbols-outlined transition-transform group-open:rotate-180 text-xs">expand_more</span>
+              </summary>
+              <div className="p-4 pt-0 text-xs text-[#bac9cc] leading-relaxed font-sans">
+                A sovereign workflow is characterized by independent asset ownership, high-integrity data sourcing, and an automated deployment pipeline that requires minimal manual intervention once configured.
+              </div>
+            </details>
+          </div>
+        </section>
+
+        {/* Bottom Interaction Area */}
+        <footer className="border-t border-[#222222] py-6 mt-10 flex items-center justify-between text-xs">
           <button 
             onClick={handleLike} 
             disabled={isLiking} 
-            style={styles.actionBtn}
-            title="Applause"
+            className="flex items-center gap-2 px-4 py-2 bg-[#121212] border border-[#222222] hover:border-[#00E5FF]/40 rounded-full transition-colors text-[#bac9cc] hover:text-[#e5e2e1]"
           >
-            <ThumbsUp size={16} /> <span style={{ fontWeight: 600, marginLeft: '6px' }}>{post.likes}</span>
+            <ThumbsUp size={14} />
+            <span className="font-mono">{post.likes}</span>
           </button>
-
-          <button onClick={handleShare} style={styles.actionBtn}>
-            <Share2 size={16} style={{ marginRight: 6 }} /> {copied ? 'Copied Link!' : 'Share Story'}
+          
+          <button 
+            onClick={handleShare}
+            className="flex items-center gap-2 px-4 py-2 bg-[#121212] border border-[#222222] hover:border-[#00E5FF]/40 rounded-full transition-colors text-[#bac9cc] hover:text-[#e5e2e1]"
+          >
+            <Share2 size={14} />
+            <span>{copied ? 'Copied Link!' : 'Share Story'}</span>
           </button>
-        </div>
-      </footer>
+        </footer>
+      </div>
 
-      {/* Author Bio Block */}
-      {post.author && (
-        <div style={styles.bioCard}>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <img src={post.author.avatar} alt={post.author.name} style={styles.bioAvatar} />
-            <div>
-              <h4 style={{ margin: 0, fontSize: '16px' }}>Written by {post.author.name}</h4>
-              <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: 'var(--text-secondary)' }}>
-                {post.author.bio}
-              </p>
-            </div>
+      {/* Right Sidebar: Sticky Actions */}
+      <aside className="hidden lg:block w-[200px] shrink-0 sticky top-20 self-start">
+        <div className="flex flex-col gap-6">
+          <div className="p-4 border border-[#00E5FF]/20 bg-[#00E5FF]/5 rounded-sm">
+            <span className="material-symbols-outlined text-[#00E5FF] mb-2 text-xl">mail</span>
+            <h4 className="text-xs font-bold text-[#e5e2e1] mb-1.5">Dispatch</h4>
+            <p className="text-[10px] text-[#bac9cc] leading-normal mb-3">Weekly protocol updates for Sovereign Operators.</p>
+            <input className="w-full bg-[#050505] border border-[#222222] rounded px-2.5 py-1.5 text-[10px] text-[#e5e2e1] mb-2 focus:border-[#00E5FF] outline-none text-center placeholder-[#bac9cc]/30" placeholder="operator@simis.net" type="email"/>
+            <button className="w-full py-1.5 bg-[#00E5FF] text-[#050505] font-bold text-[9px] rounded-sm uppercase tracking-wider">Execute Sync</button>
           </div>
         </div>
-      )}
+      </aside>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  header: {
-    marginBottom: '32px',
-  },
-  tagsRow: {
-    display: 'flex',
-    gap: '8px',
-    marginBottom: '16px',
-    flexWrap: 'wrap',
-  },
-  excerpt: {
-    fontSize: '18px',
-    color: 'var(--text-secondary)',
-    lineHeight: '1.4',
-    marginBottom: '24px',
-    fontStyle: 'italic',
-  },
-  authorBlock: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    borderTop: '1px solid var(--border-color)',
-    borderBottom: '1px solid var(--border-color)',
-    padding: '16px 0',
-  },
-  avatar: {
-    width: '44px',
-    height: '44px',
-    borderRadius: '50%',
-    objectFit: 'cover',
-  },
-  authorMeta: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  authorName: {
-    fontWeight: 600,
-    fontSize: '15px',
-    color: 'var(--text-primary)',
-    textDecoration: 'none',
-  },
-  metaRow: {
-    display: 'flex',
-    gap: '8px',
-    fontSize: '13px',
-    color: 'var(--text-secondary)',
-  },
-  interactionFooter: {
-    borderTop: '1px solid var(--border-color)',
-    padding: '24px 0',
-    marginTop: '40px',
-  },
-  interactionRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  actionBtn: {
-    background: 'var(--bg-secondary)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '20px',
-    padding: '8px 16px',
-    fontSize: '14px',
-    cursor: 'pointer',
-    color: 'var(--text-primary)',
-    display: 'inline-flex',
-    alignItems: 'center',
-    transition: 'all 0.15s',
-  },
-  bioCard: {
-    backgroundColor: 'var(--bg-secondary)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '8px',
-    padding: '20px',
-    marginTop: '30px',
-  },
-  bioAvatar: {
-    width: '50px',
-    height: '50px',
-    borderRadius: '50%',
-    objectFit: 'cover',
-  },
-  adSlot: {
-    padding: '24px',
-    margin: '20px 0',
-    backgroundColor: '#f8f9fa',
-    border: '1px dashed #ced4da',
-    borderRadius: '4px',
-    textAlign: 'center',
-    color: '#6c757d',
-    fontWeight: 'bold',
-    fontSize: '14px',
-    letterSpacing: '0.05em'
-  },
-  adSlotInline: {
-    padding: '12px',
-    margin: '0 0 20px 0',
-    backgroundColor: '#e9ecef',
-    borderRadius: '4px',
-    textAlign: 'center',
-    color: '#495057',
-    fontSize: '12px',
-    fontWeight: 'bold',
-  },
-  rpmBadge: {
-    backgroundColor: 'rgba(26, 137, 23, 0.1)',
-    color: 'var(--primary-color)',
-    padding: '2px 8px',
-    borderRadius: '12px',
-    fontSize: '12px',
-    fontWeight: 600,
-  }
-};

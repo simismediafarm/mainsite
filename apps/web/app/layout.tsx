@@ -39,20 +39,53 @@ const themeScript = `
   })()
 `;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  let mainNavItems: { label: string, href: string, icon?: string }[] = [];
+  let footerCopy = `\u00A9 2026 SIMIS Platform.`;
+
+  try {
+    const { registry } = await import('@/lib/registryClient');
+    const [navRes, widgetRes] = await Promise.allSettled([
+      registry.getNavigationByKey('main_menu'),
+      registry.getWidgetByKey('footer_config')
+    ]);
+
+    if (navRes.status === 'fulfilled' && navRes.value?.schema) {
+      try {
+        const parsed = JSON.parse(navRes.value.schema);
+        mainNavItems = parsed.items || [];
+      } catch (e) {
+        console.error("Failed to parse navigation schema");
+      }
+    }
+
+    if (widgetRes.status === 'fulfilled' && widgetRes.value?.schema) {
+      try {
+        const parsed = JSON.parse(widgetRes.value.schema);
+        if (parsed.copy) footerCopy = parsed.copy;
+      } catch (e) {
+        console.error("Failed to parse footer schema");
+      }
+    }
+  } catch (err) {
+    console.error("Failed to fetch layout configuration", err);
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* Inline Theme Hydration Guard to prevent flash of unstyled theme */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Source+Serif+4:wght@400;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
       </head>
       <body>
         <div className="layout-container">
-          <TopBar />
+          <TopBar items={mainNavItems} />
           
           <main className="main-content">
             {children}
@@ -60,7 +93,7 @@ export default function RootLayout({
 
           <footer style={styles.footer}>
             <div style={styles.footerWrapper}>
-              <p style={styles.copy}>&copy; 2026 SIMIS MediaFarm. Content-first reading experience.</p>
+              <p style={styles.copy}>{footerCopy}</p>
             </div>
           </footer>
         </div>

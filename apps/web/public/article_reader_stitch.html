@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SIMIS MediaFarm | Sovereign Operator Protocol</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+                  "surface": "#131313",
+                  "secondary": "#c7c6cb",
+                  "data-node-magenta": "#FF2D55",
+                  "outline": "#849396",
+                  "on-tertiary": "#3e2e00",
+                  "surface-container-low": "#1c1b1b",
+                  "on-secondary-fixed-variant": "#46464b",
+                  "secondary-fixed-dim": "#c7c6cb",
+                  "on-secondary-container": "#b5b4ba",
+                  "primary-container": "#00e5ff",
+                  "on-secondary-fixed": "#1a1b1f",
+                  "inverse-surface": "#e5e2e1",
+                  "primary-fixed-dim": "#00daf3",
+                  "surface-raised": "#121212",
+                  "surface-container": "#201f1f",
+                  "on-tertiary-fixed-variant": "#594400",
+                  "data-node-cyan": "#00E5FF",
+                  "on-surface": "#e5e2e1",
+                  "on-primary-container": "#00626e",
+                  "on-error": "#690005",
+                  "on-tertiary-fixed": "#251a00",
+                  "on-surface-variant": "#bac9cc",
+                  "on-secondary": "#2f3034",
+                  "surface-container-highest": "#353534",
+                  "primary-fixed": "#9cf0ff",
+                  "status-stage-draft": "#8E8E93",
+                  "on-error-container": "#ffdad6",
+                  "on-primary-fixed-variant": "#004f58",
+                  "inverse-on-surface": "#313030",
+                  "status-stage-alert": "#FF453A",
+                  "surface-dim": "#131313",
+                  "background": "#131313",
+                  "tertiary-fixed": "#ffdf96",
+                  "terminal-black": "#050505",
+                  "on-tertiary-container": "#6f5500",
+                  "secondary-fixed": "#e3e2e7",
+                  "surface-container-lowest": "#0e0e0e",
+                  "primary": "#c3f5ff",
+                  "on-primary": "#00363d",
+                  "tertiary": "#ffeac0",
+                  "tertiary-container": "#fec931",
+                  "inverse-primary": "#006875",
+                  "tertiary-fixed-dim": "#f3bf26",
+                  "error": "#ffb4ab",
+                  "on-background": "#e5e2e1",
+                  "surface-variant": "#353534",
+                  "on-primary-fixed": "#001f24",
+                  "border-subtle": "#222222",
+                  "surface-bright": "#3a3939",
+                  "outline-variant": "#3b494c",
+                  "secondary-container": "#46464b",
+                  "status-stage-active": "#32D74B",
+                  "error-container": "#93000a",
+                  "surface-container-high": "#2a2a2a",
+                  "surface-tint": "#00daf3"
+          },
+          "borderRadius": {
+                  "DEFAULT": "0.125rem",
+                  "lg": "0.25rem",
+                  "xl": "0.5rem",
+                  "full": "0.75rem"
+          },
+          "spacing": {
+                  "cell-padding-v": "4px",
+                  "cell-padding-h": "8px",
+                  "grid-gutter": "12px",
+                  "article-max-width": "680px",
+                  "sidebar-os": "280px",
+                  "section-gap": "24px"
+          },
+          "fontFamily": {
+                  "table-data": ["Inter"],
+                  "mono-label": ["JetBrains Mono"],
+                  "display-lg": ["Inter"],
+                  "headline-md": ["Inter"],
+                  "ui-label-sm": ["Inter"],
+                  "article-body": ["Source Serif 4"]
+          },
+          "fontSize": {
+                  "table-data": ["13px", {"lineHeight": "1", "fontWeight": "400"}],
+                  "mono-label": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                  "display-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                  "headline-md": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                  "ui-label-sm": ["12px", {"lineHeight": "1.2", "fontWeight": "500"}],
+                  "article-body": ["18px", {"lineHeight": "1.65", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .progress-bar { width: 0%; height: 2px; background-color: #00E5FF; position: absolute; bottom: 0; left: 0; transition: width 0.1s; }
+    .glass-nav { backdrop-filter: blur(8px); background: rgba(19, 19, 19, 0.85); }
+    .prose a { color: #00E5FF; text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.2s; }
+    .prose a:hover { border-color: #00E5FF; }
+  </style>
+</head>
+<body class="bg-background text-on-background selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar Implementation -->
+<nav class="fixed top-0 w-full z-50 bg-background dark:bg-background border-b border-border-subtle flex justify-between items-center h-12 px-grid-gutter transition-all duration-200 ease-in-out">
+<div class="flex items-center gap-6">
+<span class="font-display-lg text-display-lg font-bold text-primary dark:text-primary tracking-tighter">SIMIS MediaFarm</span>
+<div class="hidden md:flex gap-4">
+<a class="font-headline-md text-headline-md text-primary dark:text-primary border-b border-primary pb-1 transition-all" href="#">Archive</a>
+<a class="font-headline-md text-headline-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary transition-colors" href="#">Network</a>
+<a class="font-headline-md text-headline-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary transition-colors" href="#">Intelligence</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer transition-colors" data-icon="search">search</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer transition-colors" data-icon="account_circle">account_circle</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer transition-colors" data-icon="settings">settings</span>
+</div>
+<div class="progress-bar" id="scrollProgress"></div>
+</nav>
+<main class="pt-24 pb-20 px-grid-gutter max-w-[1440px] mx-auto flex gap-12">
+<!-- Left Sidebar: Table of Contents -->
+<aside class="hidden xl:block w-[220px] sticky top-24 self-start">
+<div class="space-y-6">
+<div class="flex flex-col gap-2">
+<span class="font-mono-label text-mono-label text-outline uppercase tracking-widest">Outline</span>
+<nav class="flex flex-col gap-3">
+<a class="font-ui-label-sm text-ui-label-sm text-primary" href="#intro">01 Introduction</a>
+<a class="font-ui-label-sm text-ui-label-sm text-on-surface-variant hover:text-on-surface transition-colors" href="#core-metrics">02 Core Metrics</a>
+<a class="font-ui-label-sm text-ui-label-sm text-on-surface-variant hover:text-on-surface transition-colors" href="#tooling">03 Hardware Protocol</a>
+<a class="font-ui-label-sm text-ui-label-sm text-on-surface-variant hover:text-on-surface transition-colors" href="#optimization">04 Optimization</a>
+<a class="font-ui-label-sm text-ui-label-sm text-on-surface-variant hover:text-on-surface transition-colors" href="#faq">05 System FAQ</a>
+</nav>
+</div>
+<div class="h-[1px] bg-border-subtle"></div>
+<div class="flex flex-col gap-4">
+<span class="font-mono-label text-mono-label text-outline uppercase tracking-widest">Share</span>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer" data-icon="share">share</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer" data-icon="bookmark">bookmark</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer" data-icon="print">print</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Center Article Canvas -->
+<article class="flex-1 max-w-[article-max-width] mx-auto">
+<header class="mb-10">
+<div class="flex items-center gap-3 mb-6">
+<span class="px-2 py-0.5 bg-data-node-cyan text-terminal-black font-mono-label text-mono-label rounded-sm">GUIDE</span>
+<span class="text-on-surface-variant font-mono-label text-mono-label">/ INTELLIGENCE</span>
+<span class="text-on-surface-variant font-mono-label text-mono-label">/ AI</span>
+</div>
+<h1 class="font-article-body text-[36px] leading-[1.2] font-semibold text-on-surface mb-8">The Sovereign Operator: Optimizing Asset Lifecycle for High-Frequency Editorial Output</h1>
+<div class="flex items-center justify-between py-6 border-y border-border-subtle">
+<div class="flex items-center gap-3">
+<img alt="Author" class="w-10 h-10 rounded-full border border-border-subtle" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDS8DiqHQ1YhjFXLB7YWaJodWUFMIzGGJuzpi222jE4_FlIlxPz2Cr8IPBe1TZ2Kf1eiJz6Qn0BndK7nkYcsHTLEQdmFkFdamHvjDmuqUspnovvY7_6w0AI0VXdtvwLe-aGCO4Zc4XteGgXS-XjQY_I3Fl3JadqxrxyZso9GdPoxAPYyubZ18Ke4EcfIEEKt4JnG_g7rg6H_sXPCwKLO5H5eeouFjyCzuCdD0pBwwsYZS4u-fK5GmfAZhIPK_Fado_Qck8xvnsMI8Tp"/>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-ui-label-sm text-ui-label-sm text-on-surface font-semibold">Julian Vane</span>
+<span class="flex items-center gap-1 text-[10px] font-bold text-status-stage-active uppercase bg-status-stage-active/10 px-1.5 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[12px]" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
+                  Expert Verified
+                </span>
+</div>
+<p class="font-ui-label-sm text-[11px] text-on-surface-variant">Senior Editorial Architect • Oct 24, 2024</p>
+</div>
+</div>
+<div class="text-right">
+<div class="flex items-center gap-1 text-on-surface-variant font-mono-label text-mono-label">
+<span class="material-symbols-outlined text-[14px]" data-icon="schedule">schedule</span>
+              12 MIN READ
+            </div>
+</div>
+</div>
+<div class="mt-4 p-3 bg-surface-container-low border border-border-subtle rounded-lg flex items-center gap-4">
+<div class="flex -space-x-2">
+<img class="w-6 h-6 rounded-full border border-surface shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUFqEl1s_fhWQj1eaczTtPzLBL94YuDyl-ykyBP6SgPv89kCxMC0_OrFOf6DnsAOlwWhe7-rRm89l5_zo8pyq8IY_eKcXUoE5faIVITnFiKzcsxT7q-ef2rV1K0FOwuNhR-WNx6wmB8a_o3CFPtuKd9YqvYLtnlkiYQqXXCeJw5cDaKhfspZopVNVu1-4DEe9b87uxe4q9imlN8xOlBEJFyJBp5_2xPOfapJjnXumaX4J-loR1y81uVZYoLhYyyP_IUZLQFzhHqQfy"/>
+</div>
+<div class="font-ui-label-sm text-ui-label-sm text-on-surface-variant">
+            Fact-checked by <span class="text-on-surface font-semibold">Elena Rossi</span> • Editorial Oversight Committee
+          </div>
+<span class="material-symbols-outlined text-status-stage-active ml-auto" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</header>
+<section class="mb-12">
+<figure class="w-full mb-4">
+<img alt="Professional workstation" class="w-full h-auto rounded-lg grayscale hover:grayscale-0 transition-all duration-700" src="https://lh3.googleusercontent.com/aida/AP1WRLu66eUxYuXP72jMkBPuagi3_a-4efNo-bdrvbVt62hJk6UY-WXgpQ5ITFwYYkzjynBi3ufFXhm_-8UtBirIYAl9lvjN4EZ_3aQTNshoookwgQ_-o5yhS73SWZod-eD5ijBIGtOpMufUezJAbnPXSTn21d87AXAAfytxeYVF5rpK92UzXvQVXZvb09FpnzNm7sQ58STc-pZr2rlxWsz-efs-GYdricd-jHUQFDcbhYJuRiglLWxPCXetBsY"/>
+<figcaption class="mt-3 font-ui-label-sm text-ui-label-sm text-on-surface-variant italic text-center">
+            Figure 1.0: A precision-engineered environment is the primary catalyst for editorial throughput.
+          </figcaption>
+</figure>
+<div class="font-article-body text-article-body text-on-surface prose max-w-none space-y-8" id="intro">
+<p>
+            In the modern digital landscape, the distinction between a "content creator" and a <a href="#">Sovereign Operator</a> lies in the precision of their infrastructure. High-frequency editorial output requires more than just creativity; it demands a systematic approach to asset management, from the initial node of data capture to the final distribution sequence.
+          </p>
+<p>
+            The media industry is shifting toward an engineering-led model. The 12-stage lifecycle of a content asset—encompassing research, ingestion, transformation, and multi-channel deployment—now mirrors the software development lifecycle (SDLC). To thrive, operators must leverage high-performance tooling that minimizes cognitive overhead.
+          </p>
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface mt-12 mb-6" id="core-metrics">Quantifying Editorial Performance</h2>
+<p>
+            Traditional metrics like word count are obsolete. The modern operator tracks <strong>Throughput Efficiency</strong> and <strong>Node Latency</strong>. How quickly can a research insight be transformed into a verified editorial block?
+          </p>
+<!-- Affiliate Block -->
+<div class="my-12 border border-border-subtle bg-surface-container-lowest overflow-hidden group">
+<div class="flex flex-col md:flex-row">
+<div class="w-full md:w-1/3 bg-surface-container p-4 flex items-center justify-center">
+<img alt="Product Spotlight" class="max-h-48 group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida/AP1WRLvT4RmzQjNekQa0O3BAFZtKmDXbE4IUOXfqmhBMk1bO5pgMjHuOEs16x_WCgot98ADXyR__uayt8a1TjXqciBiQpFm_rNk1oGMwVl7ivqj0ObVKNjPdF_pMS0Cay5x8lZmo3ixMA8PvMHmGKPCS8ur5TQlM453S2hX-SI5UrBoLmtMpEZwAWWSxREMXOUd-acb5qtlrv4ljpulTIl_EbCdyvF82sMsuZUnnC4SYSPigcQYCw5S4ngLJRihq"/>
+</div>
+<div class="flex-1 p-6 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-headline-md text-headline-md text-on-surface">Matrix Operator Chair v4</h3>
+<div class="flex text-tertiary-container">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 0.5;">star</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-6">
+<ul class="text-[13px] font-ui-label-sm space-y-1">
+<li class="flex items-center gap-1 text-status-stage-active">
+<span class="material-symbols-outlined text-[16px]" data-icon="check">check</span> 4D Lumbar Logic
+                      </li>
+<li class="flex items-center gap-1 text-status-stage-active">
+<span class="material-symbols-outlined text-[16px]" data-icon="check">check</span> Zero-G Recline
+                      </li>
+</ul>
+<ul class="text-[13px] font-ui-label-sm space-y-1">
+<li class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]" data-icon="close">close</span> High Entry Cost
+                      </li>
+</ul>
+</div>
+</div>
+<button class="w-full py-3 bg-data-node-cyan text-terminal-black font-bold text-ui-label-sm rounded hover:bg-primary-fixed-dim transition-colors flex items-center justify-center gap-2 uppercase tracking-wider">
+                  Check Price on Operator Protocol
+                  <span class="material-symbols-outlined" data-icon="open_in_new">open_in_new</span>
+</button>
+</div>
+</div>
+</div>
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface mt-12 mb-6" id="tooling">The Hardware Protocol</h2>
+<p>
+            While software handles the logic, the physical environment dictates the operator's endurance. Ergonomic alignment is not a luxury; it is a fundamental requirement for 10+ hour deep-work sessions. A desk is no longer a table; it is a command center.
+          </p>
+</div>
+<!-- FAQ Section -->
+<section class="mt-20 pt-10 border-t border-border-subtle" id="faq">
+<h3 class="font-headline-md text-headline-md font-bold text-on-surface mb-8">System FAQ</h3>
+<div class="space-y-4">
+<details class="group bg-surface-container border border-border-subtle rounded-lg">
+<summary class="list-none p-4 flex justify-between items-center cursor-pointer font-ui-label-sm text-on-surface font-semibold">
+                What constitutes a "Sovereign Operator" workflow?
+                <span class="material-symbols-outlined transition-transform group-open:rotate-180" data-icon="expand_more">expand_more</span>
+</summary>
+<div class="p-4 pt-0 text-[14px] text-on-surface-variant leading-relaxed font-ui-label-sm">
+                A sovereign workflow is characterized by independent asset ownership, high-integrity data sourcing, and an automated deployment pipeline that requires minimal manual intervention once configured.
+              </div>
+</details>
+<details class="group bg-surface-container border border-border-subtle rounded-lg">
+<summary class="list-none p-4 flex justify-between items-center cursor-pointer font-ui-label-sm text-on-surface font-semibold">
+                Is hardware virtualization necessary for media production?
+                <span class="material-symbols-outlined transition-transform group-open:rotate-180" data-icon="expand_more">expand_more</span>
+</summary>
+<div class="p-4 pt-0 text-[14px] text-on-surface-variant leading-relaxed font-ui-label-sm">
+                For high-volume output, virtualization allows for sandboxed research environments and distributed rendering, which significantly reduces local resource contention.
+              </div>
+</details>
+</div>
+</section>
+<!-- Author Bio Card -->
+<section class="mt-16 p-8 bg-surface-raised border border-border-subtle rounded-xl flex flex-col md:flex-row gap-8">
+<div class="flex-shrink-0">
+<img alt="Julian Vane" class="w-32 h-32 rounded-lg border border-border-subtle" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4m20bGHEwwKlaILbnGAKrn9d8iXFuSUW9JHGZt2TTd7ycrxo6lxWSalv5Z1wyl7SedyO8FzWvy3SR1FxVf-P9j5jRxRhU1hKNsTBiaZEGOq56bd23w-5u7HXz3ra-h6_xnakIPg3kAvjj9f082y48jcFGN6I9qdOHyDk2wWPYi-U5T9d8RDIjieJS3_DnsrOyfwyu5JCjYd3yxyNNmWo1tvlzDfy7CahQ_pxBH7tfB07HrQ0MJck2ktGNgbEu6hjXzpWyrAJmtvoT"/>
+<div class="flex gap-4 mt-4 justify-center">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer" data-icon="alternate_email">alternate_email</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer" data-icon="hub">hub</span>
+</div>
+</div>
+<div>
+<h4 class="font-headline-md text-headline-md text-on-surface mb-2">Julian Vane</h4>
+<p class="font-ui-label-sm text-ui-label-sm text-primary mb-4 uppercase tracking-widest">Editorial Architect • Systems Specialist</p>
+<p class="font-article-body text-[16px] text-on-surface-variant mb-6 leading-relaxed">
+              Julian specializes in the intersection of high-density data analytics and editorial strategy. With over a decade of experience in financial media and technology reporting, he develops frameworks for the next generation of sovereign content operators.
+            </p>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-surface-container-highest text-on-surface text-[11px] font-mono-label border border-border-subtle rounded">ASSET LIFECYCLE</span>
+<span class="px-3 py-1 bg-surface-container-highest text-on-surface text-[11px] font-mono-label border border-border-subtle rounded">AI OPS</span>
+<span class="px-3 py-1 bg-surface-container-highest text-on-surface text-[11px] font-mono-label border border-border-subtle rounded">TERMINAL SYSTEMS</span>
+</div>
+</div>
+</section>
+</section>
+<!-- Related Content -->
+<section class="mt-24 border-t border-border-subtle pt-16">
+<h3 class="font-headline-md text-headline-md text-on-surface font-bold mb-8">Related Intelligence</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Card 1 -->
+<div class="group cursor-pointer">
+<div class="aspect-video bg-surface-container overflow-hidden rounded-lg mb-4 border border-border-subtle">
+<img alt="Cybersecurity" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Close up of high-tech digital circuitry with cyan neon lights glowing against a dark, futuristic background. The mood is highly technical and cybernetic, reflecting the design system's professional engineering-focused aesthetic. Perfect symmetry and sharp focus on microchip components." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYZMTtyY2WBYPRmpi3hXsFsJOSP6bBxIFiHPkXjVQhnM4IdhS_2M6PwKOPFMYvYnjbp7wtScqg_TsoQPE_t0SUadT0rYujUsc2h3GfYDcBcyRXT-FG_PZTsmBQnXgT2GaxNgA8_bhD6yyybo7HEt67yC40KVv3f7HvG577ZLJ-uoARRqFDNbjpn_TDgNmOJJffOqwUxezzK0Q5QkzXiT1vHOxZKJJN6C4CBOZD7OK4x6ud0sk8fT04HVwVJFm0CsAqjolggCZD01Z5"/>
+</div>
+<span class="font-mono-label text-[10px] text-primary uppercase tracking-widest mb-2 block">Security</span>
+<h4 class="font-headline-md text-[16px] text-on-surface group-hover:text-primary transition-colors leading-tight">Hardening the Editorial Edge: Cold Storage for Media Nodes</h4>
+</div>
+<!-- Card 2 -->
+<div class="group cursor-pointer">
+<div class="aspect-video bg-surface-container overflow-hidden rounded-lg mb-4 border border-border-subtle">
+<img alt="Data" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A macro view of a high-speed data processor module with glowing data-node magenta and cyan pulse indicators. The setting is clean and minimalist with hard light casting sharp shadows on metallic surfaces. The visual style is professional, high-performance, and engineering-driven, resembling a Bloomberg Terminal dashboard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqxNNFLy8trKCCBy62PBGgKHSEgkwxa9unoWX-JTKbUGaVSaNjziqW1TlrQzxeXpofiuP4K4x8jiRz2doXA_bcrg19GWoDO9OJaDbANig3dkNVML5xFbMG4gE4VDdgZcPFT0VPMlGauwYerwivWvA4D5k_f-4ep8E5ETsoblLpjY57zbdUeU6kSgIbFh4rCYicRYMmEAQAqLdlRJPjkwJ5kwDYzwbjrcqSlZTuS27q-BJ0P7pV5OBHuaqkGDFcSLXzhvmN8OspA_s3"/>
+</div>
+<span class="font-mono-label text-[10px] text-primary uppercase tracking-widest mb-2 block">Performance</span>
+<h4 class="font-headline-md text-[16px] text-on-surface group-hover:text-primary transition-colors leading-tight">Benchmark Analysis: LLM Tokens per Editorial Second</h4>
+</div>
+<!-- Card 3 -->
+<div class="group cursor-pointer">
+<div class="aspect-video bg-surface-container overflow-hidden rounded-lg mb-4 border border-border-subtle">
+<img alt="Connectivity" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A global network map visualized as a mesh of glowing cyan lines over a deep charcoal background. The map shows data flow between nodes across continents with small white status pings representing active sync states. The style is authoritative and sleek, prioritizing signal clarity over decorative elements." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzVyLKOpa0LnjhehP2rM9mmpxql_Z5TQRavO1gUFQUZ2dP9uCw7YjPFWRvG_iCYp-1FV4sF72dp-hmeYvg18K2aR8k3J0YNcuod_wQLQHlbwzcdV71veK061LhyWx7PDHVnRMrH58CPYDSFir78MUhHDqY5UTvUTt9Tjd-OLBfp_nbpd6Wbqst1uTxiRSZUS0tpo_F-9Wo2AfwRim_8vnRQdnmubB7PRXHOFnu8clQFtHFaRICEwMugxVLVYFWsSiKyPtnSttU9Vr0"/>
+</div>
+<span class="font-mono-label text-[10px] text-primary uppercase tracking-widest mb-2 block">Governance</span>
+<h4 class="font-headline-md text-[16px] text-on-surface group-hover:text-primary transition-colors leading-tight">Decentralized Distribution: Bypassing Algorithm Gatekeepers</h4>
+</div>
+</div>
+</section>
+</article>
+<!-- Right Sidebar: Sticky Actions -->
+<aside class="hidden lg:block w-[220px] sticky top-24 self-start">
+<div class="flex flex-col gap-8">
+<!-- Newsletter CTA -->
+<div class="p-5 border border-primary/30 bg-primary/5 rounded-lg">
+<span class="material-symbols-outlined text-primary mb-3" data-icon="mail" style="font-variation-settings: 'FILL' 1;">mail</span>
+<h4 class="font-headline-md text-[14px] text-on-surface mb-2 leading-tight">MediaFarm Dispatch</h4>
+<p class="font-ui-label-sm text-[12px] text-on-surface-variant mb-4">Weekly protocol updates for Sovereign Operators.</p>
+<input class="w-full bg-surface border border-border-subtle rounded px-3 py-1.5 text-[12px] text-on-surface mb-3 focus:border-primary outline-none transition-all" placeholder="operator@simis.net" type="email"/>
+<button class="w-full py-2 bg-primary text-on-primary font-bold text-[11px] rounded uppercase tracking-wider">Execute Sync</button>
+</div>
+<div class="flex flex-col gap-4">
+<span class="font-mono-label text-mono-label text-outline uppercase tracking-widest">Next Entry</span>
+<div class="group cursor-pointer">
+<p class="font-ui-label-sm text-ui-label-sm text-on-surface group-hover:text-primary transition-colors mb-1">Synthesizing Signal from Global Market Noise</p>
+<span class="text-[10px] text-on-surface-variant font-mono-label flex items-center gap-1">
+              PROCEED <span class="material-symbols-outlined text-[12px]" data-icon="arrow_forward">arrow_forward</span>
+</span>
+</div>
+</div>
+</div>
+</aside>
+</main>
+<!-- Footer Implementation -->
+<footer class="bg-surface-container dark:bg-surface-container w-full mt-auto border-t border-border-subtle py-12">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-section-gap px-grid-gutter max-w-7xl mx-auto">
+<div class="col-span-1">
+<span class="font-headline-md text-headline-md text-primary block mb-4">SIMIS MediaFarm</span>
+<p class="font-ui-label-sm text-ui-label-sm text-on-surface-variant max-w-[200px]">
+          Engineering the future of sovereign editorial operations and asset intelligence.
+        </p>
+</div>
+<div>
+<h5 class="font-mono-label text-mono-label text-outline uppercase mb-4">Operator Links</h5>
+<div class="flex flex-col gap-2">
+<a class="font-ui-label-sm text-ui-label-sm text-on-surface-variant hover:text-on-surface transition-colors" href="#">Governance</a>
+<a class="font-ui-label-sm text-ui-label-sm text-on-surface-variant hover:text-on-surface transition-colors" href="#">Network Map</a>
+<a class="font-ui-label-sm text-ui-label-sm text-on-surface-variant hover:text-on-surface transition-colors" href="#">Documentation</a>
+</div>
+</div>
+<div>
+<h5 class="font-mono-label text-mono-label text-outline uppercase mb-4">Legal</h5>
+<div class="flex flex-col gap-2">
+<a class="font-ui-label-sm text-ui-label-sm text-on-surface-variant hover:text-on-surface transition-colors" href="#">Privacy</a>
+<a class="font-ui-label-sm text-ui-label-sm text-on-surface-variant hover:text-on-surface transition-colors" href="#">Terms</a>
+<a class="font-ui-label-sm text-ui-label-sm text-on-surface-variant hover:text-on-surface transition-colors" href="#">Sitemap</a>
+</div>
+</div>
+<div>
+<h5 class="font-mono-label text-mono-label text-outline uppercase mb-4">System Status</h5>
+<div class="flex items-center gap-2 mb-4">
+<div class="w-2 h-2 rounded-full bg-status-stage-active shadow-[0_0_8px_#32D74B]"></div>
+<span class="font-ui-label-sm text-ui-label-sm text-on-surface">Nodes Online</span>
+</div>
+<p class="font-ui-label-sm text-ui-label-sm text-on-surface-variant">
+          v2.4.8-stable
+        </p>
+</div>
+</div>
+<div class="mt-12 px-grid-gutter text-center border-t border-border-subtle pt-8">
+<p class="font-ui-label-sm text-ui-label-sm text-on-surface-variant">© 2024 SIMIS MediaFarm. Sovereign Operator Protocol.</p>
+</div>
+</footer>
+<script>
+    // Scroll Progress Bar Logic
+    window.onscroll = function() {
+      const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = (winScroll / height) * 100;
+      document.getElementById("scrollProgress").style.width = scrolled + "%";
+    };
+
+    // Lightweight Interactivity
+    document.querySelectorAll('details').forEach((el) => {
+      el.addEventListener('toggle', () => {
+        if (el.open) {
+          el.classList.add('shadow-lg');
+          el.style.backgroundColor = 'var(--surface-container-high)';
+        } else {
+          el.classList.remove('shadow-lg');
+          el.style.backgroundColor = 'var(--surface-container)';
+        }
+      });
+    });
+  </script>
+</body></html>

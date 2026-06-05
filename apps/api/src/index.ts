@@ -3,6 +3,7 @@ import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { mvpRouter } from './routers/mvp';
+import { registryRouter } from './routers/registry';
 import { handle } from 'hono/vercel';
 
 const app = new Hono();
@@ -18,6 +19,9 @@ app.use('*', cors({
 
 // Mount MVP Blog Platform routes
 app.route('/api/mvp', mvpRouter);
+
+// Mount SIMIS V2.2 Registries
+app.route('/api/v1/registry', registryRouter);
 
 // Health Check
 app.get('/health', (c) => c.json({ status: 'ok', service: 'simis-mediafarm-api' }));

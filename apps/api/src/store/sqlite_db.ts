@@ -1,7 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { Post, Profile, CreatePostDTO, SSEEvent, PostStatus } from '@simis/shared';
 
-// Initialize Prisma
 const prisma = new PrismaClient();
 
 export class SQLiteDB {

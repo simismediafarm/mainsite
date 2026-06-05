@@ -46,6 +46,7 @@ export interface Post {
   rpmReal?: number;
   adSlotsFilled?: number;
   editorialBoost?: number;
+  seoMetadata?: any;
 }
 
 export interface CreatePostDTO {
