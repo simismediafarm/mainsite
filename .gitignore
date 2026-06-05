@@ -8,3 +8,9 @@ build
 .env.*
 !.env.example
 
+
+*.db
+*.sqlite
+*.sqlite3
+
+supabase/.temp
