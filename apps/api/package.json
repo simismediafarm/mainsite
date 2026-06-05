@@ -5,12 +5,17 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "test": "vitest run",
     "start": "node dist/index.js"
   },
   "dependencies": {
     "@hono/node-server": "^1.10.0",
+    "@prisma/client": "^7.8.0",
+    "@simis/database": "workspace:^",
     "@simis/kernel-graph": "workspace:*",
     "@simis/reasoning-graph": "workspace:*",
+    "@simis/registry-core": "workspace:*",
+    "@simis/shared": "workspace:*",
     "@supabase/supabase-js": "^2.43.0",
     "cheerio": "^1.2.0",
     "cosine-similarity": "^1.0.1",
@@ -18,11 +23,16 @@
     "hono": "^4.2.0",
     "ioredis": "^5.11.0",
     "natural": "^8.1.1",
-    "p-limit": "^7.3.0"
+    "p-limit": "^7.3.0",
+    "uuid": "^14.0.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@types/uuid": "^11.0.0",
+    "@vitest/coverage-v8": "1.6.1",
     "tsx": "^4.22.4",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitest": "^1.0.0"
   }
 }

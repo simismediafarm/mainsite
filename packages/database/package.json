@@ -2,7 +2,15 @@
   "name": "@simis/database",
   "version": "1.0.0",
   "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
   "scripts": {
     "test:migrations": "echo 'No migration tests defined yet'"
+  },
+  "devDependencies": {
+    "prisma": "^7.8.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.8.0"
   }
 }

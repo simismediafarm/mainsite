@@ -1,382 +1,243 @@
-/**
- * page.tsx — SIMIS Programmatic Media Homepage
- * RSC Version for Zero-CLS & Hydration fixes
- */
-
 import React from 'react';
-import { API_BASE } from '../lib/kernel-api';
-import NewsletterModal from '../components/NewsletterModal';
+import Link from 'next/link';
+import { Post } from '@simis/shared';
+import PostCard from '../components/PostCard';
 
-interface ContentBlockV2 {
-  id: string;
-  type: "article" | "affiliate" | "scraped" | "ai_generated" | "comparison";
-  title: string;
-  slug: string;
-  blocks: any[];
-  metadata: {
-    category: string;
-    tags: string[];
-    author: string;
-    created_at: string;
-  };
-  ranking: {
-    score: number;
-    monetization_weight: number;
-  };
-}
+export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  let feedItems: ContentBlockV2[] = [];
+  let initialPosts: Post[] = [];
+  let trendingTags: string[] = ['Technology', 'AI', 'Startups', 'Future', 'Engineering'];
 
   try {
-    const res = await fetch(`${API_BASE}/api/v2/feed?limit=15`, { next: { revalidate: 60 } });
+    // We use 127.0.0.1 instead of localhost to prevent IPv6 DNS resolution issues in Node
+    const res = await fetch(`http://127.0.0.1:4000/api/mvp/feed`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
-      feedItems = data.items || [];
+      initialPosts = data.posts || [];
     }
-  } catch (err) {
-    feedItems = [];
+  } catch (err: any) {
+    if (err.code === 'ECONNREFUSED' || err.message?.includes('fetch failed')) {
+      console.warn('Backend API is not available yet. Using empty feed.');
+    } else {
+      console.error('Failed to fetch initial feed', err);
+    }
   }
 
-  if (feedItems.length === 0) {
-    return (
-      <div style={{ ...homeStyles.container, padding: '80px 20px', textAlign: 'center' }}>
-        <h1 style={homeStyles.sectionTitle}>📰 Welcome to SIMIS</h1>
-        <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>Our programmatic feed is currently synchronizing. Please check back shortly.</p>
-      </div>
-    );
-  }
-
-  const heroItem = feedItems[0];
-  const dealsItems = feedItems.filter(item => item.type === 'affiliate');
-  const streamItems = feedItems.slice(1);
-
-  const jsonLdCollection = {
-    '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    name: 'SIMIS Media Home Feed',
-    description: 'Curated programmatic media feed and hot deals.',
-    url: 'https://mediafarm.vercel.app',
-    hasPart: feedItems.map(item => ({
-      '@type': 'Article',
-      headline: item.title,
-      url: `https://mediafarm.vercel.app/read/${item.slug}`
-    }))
-  };
+  // Segment posts based on V1.2 Architecture
+  const heroPost = initialPosts[0];
+  const featuredPosts = initialPosts.slice(1, 4);
+  const latestPosts = initialPosts.slice(4);
 
   return (
-    <div style={homeStyles.container}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdCollection) }}
-      />
-      {/* ── Section A: Hero Stream (Featured Review / Story) ────────────────── */}
-      {heroItem && (
-        <section style={homeStyles.heroSection}>
-          <div className="glass-container hover-lift" style={homeStyles.heroCard}>
-            <div style={homeStyles.heroBadge}>🔥 BREAKING TREND</div>
-            <h1 style={homeStyles.heroTitle}>{heroItem.title}</h1>
-            <p style={homeStyles.heroMeta}>
-              By <span style={homeStyles.bold}>{heroItem.metadata.author}</span> in {heroItem.metadata.category}
-            </p>
-            <a href={`/read/${heroItem.slug}`} style={homeStyles.heroBtn}>Read Full Review</a>
-          </div>
-        </section>
-      )}
+    <div className="reader-container" style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 20px' }}>
+      <header style={styles.header}>
+        <h1 style={styles.title}>The Future Belongs to Publishers Who Understand Attention</h1>
+        <p style={styles.subtitle}>Curated intelligence, programmatic insights, and deep technical editorials.</p>
+      </header>
 
-      {/* ── Section B: Deals Strip (Monetization Injection Point) ───────────── */}
-      {dealsItems.length > 0 && (
-        <section style={homeStyles.dealsSection}>
-          <div style={homeStyles.sectionHeader}>
-            <h2 style={homeStyles.sectionTitle}>💰 Hot Deals Strip</h2>
-            <span style={homeStyles.sectionSub}>Content-Egg direct affiliate tracking</span>
-          </div>
-          <div style={homeStyles.dealsTrack}>
-            {dealsItems.map(deal => (
-              <div key={deal.id} className="glass-container hover-lift" style={homeStyles.dealCard}>
-                <div style={homeStyles.discountBadge}>-25% Price Drop</div>
-                <h3 style={homeStyles.dealTitle}>{deal.title}</h3>
-                <p style={homeStyles.dealPrice}>$299.00 <span style={homeStyles.strike}>$399.00</span></p>
-                <a href={`/read/${deal.slug}`} style={homeStyles.dealBtn}>Get Tracking Link</a>
+      {/* 1. Hero Story */}
+      {heroPost && (
+        <section style={styles.section}>
+          <Link href={`/post/${heroPost.id}`} style={styles.heroCard}>
+            <div style={styles.heroContent}>
+              <span style={styles.featuredBadge}>FEATURED STORY</span>
+              <h2 style={styles.heroTitle}>{heroPost.title}</h2>
+              <p style={styles.heroExcerpt}>{heroPost.excerpt}</p>
+              <div style={styles.heroMeta}>
+                By {heroPost.author?.name || 'Editorial Team'} • {new Date(heroPost.createdAt).toLocaleDateString()}
               </div>
+            </div>
+          </Link>
+        </section>
+      )}
+
+      {/* 2. Trending Topics */}
+      <section style={styles.section}>
+        <h3 style={styles.sectionTitle}>Explore Trending Topics</h3>
+        <div style={styles.topicPills}>
+          {trendingTags.map(tag => (
+            <Link key={tag} href={`/tag/${tag}`} style={styles.topicPill}>
+              {tag}
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* 3. Featured Stories Grid */}
+      {featuredPosts.length > 0 && (
+        <section style={styles.section}>
+          <h3 style={styles.sectionTitle}>Curated Intelligence</h3>
+          <div style={styles.featuredGrid}>
+            {featuredPosts.map((post) => (
+              <PostCard key={post.id} post={post} />
             ))}
           </div>
         </section>
       )}
 
-      {/* ── Section C: Main Ranked Stream (Infinite Content Stream) ─────────── */}
-      {streamItems.length > 0 && (
-        <section style={homeStyles.streamSection}>
-          <h2 style={homeStyles.sectionTitle}>📰 Discovery Stream</h2>
-          <div style={homeStyles.feedGrid}>
-            {streamItems.map(item => (
-              <article key={item.id} className="glass-container hover-lift" style={homeStyles.articleCard}>
-                <div style={homeStyles.cardHeader}>
-                  <span style={homeStyles.category}>{item.metadata.category}</span>
-                  <span style={homeStyles.scoreBadge}>CTR Score: {item.ranking.score.toFixed(2)}</span>
-                </div>
-                <h3 style={homeStyles.cardTitle}>{item.title}</h3>
-                <p style={homeStyles.cardSnippet}>
-                  Explore automated specs, price comparison grids, and dynamic scoring indexes.
-                </p>
-                <div style={homeStyles.cardFooter}>
-                  <a href={`/read/${item.slug}`} style={homeStyles.cardLink}>Read Article ➔</a>
-                  <span style={homeStyles.typeBadge}>{item.type}</span>
-                </div>
-              </article>
+      {/* 4. Latest Publications */}
+      {latestPosts.length > 0 && (
+        <section style={styles.section}>
+          <h3 style={styles.sectionTitle}>Latest Publications</h3>
+          <div style={styles.latestGrid}>
+            {latestPosts.map((post) => (
+              <PostCard key={post.id} post={post} />
             ))}
           </div>
         </section>
       )}
 
-      {/* ── Pre-reserved Ad Slot (Prevents Layout Shift) ──────────────────── */}
-      <div style={homeStyles.adSlot}>
-        <span style={homeStyles.adPlaceholderText}>Advertisement - 728x90</span>
-      </div>
-
-      {/* ── Lead Capture Newsletter Box (Client Component) ────────────────── */}
-      <NewsletterModal />
+      {/* 5. Newsletter CTA */}
+      <section style={styles.newsletterSection}>
+        <h3 style={styles.newsletterTitle}>Never Miss a Great Story</h3>
+        <p style={styles.newsletterDesc}>Receive carefully selected articles directly in your inbox.</p>
+        <div style={styles.newsletterForm}>
+          <input type="email" placeholder="Enter your email" style={styles.newsletterInput} />
+          <button type="button" style={styles.newsletterBtn}>Subscribe</button>
+        </div>
+      </section>
     </div>
   );
 }
 
-const homeStyles: Record<string, React.CSSProperties> = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '48px',
-  },
-  heroSection: {
-    width: '100%',
-  },
-  heroCard: {
-    padding: '48px',
-    borderRadius: 'var(--radius-lg)',
-    border: '1px solid var(--surface-border)',
-    background: 'linear-gradient(135deg, var(--surface) 0%, var(--primary-glow) 100%)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-    alignItems: 'flex-start',
-  },
-  heroBadge: {
-    background: 'var(--primary)',
-    color: '#fff',
-    fontSize: '12px',
-    fontWeight: 700,
-    padding: '6px 12px',
-    borderRadius: '20px',
-    letterSpacing: '0.05em',
-  },
-  heroTitle: {
-    fontSize: '38px',
-    lineHeight: '1.2',
-    color: 'var(--text-primary)',
+const styles: Record<string, React.CSSProperties> = {
+  header: {
+    padding: '60px 0 40px 0',
+    textAlign: 'center',
     maxWidth: '800px',
+    margin: '0 auto',
   },
-  heroMeta: {
-    color: 'var(--text-secondary)',
-    fontSize: '15px',
-  },
-  bold: {
-    fontWeight: 600,
+  title: {
+    fontSize: '48px',
+    fontWeight: 800,
+    letterSpacing: '-0.04em',
+    lineHeight: '1.1',
+    marginBottom: '16px',
     color: 'var(--text-primary)',
   },
-  heroBtn: {
-    background: 'var(--primary)',
-    color: '#fff',
-    textDecoration: 'none',
-    fontWeight: 600,
-    padding: '14px 28px',
-    borderRadius: 'var(--radius-sm)',
-    marginTop: '16px',
-    boxShadow: '0 4px 14px var(--primary-glow)',
+  subtitle: {
+    fontSize: '20px',
+    color: 'var(--text-secondary)',
+    lineHeight: '1.5',
   },
-  dealsSection: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '24px',
-  },
-  sectionHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    borderBottom: '2px solid var(--surface-border)',
-    paddingBottom: '12px',
+  section: {
+    marginBottom: '60px',
   },
   sectionTitle: {
     fontSize: '24px',
-    color: 'var(--text-primary)',
-  },
-  sectionSub: {
-    color: 'var(--text-secondary)',
-    fontSize: '14px',
-  },
-  dealsTrack: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-    gap: '24px',
-  },
-  dealCard: {
-    padding: '24px',
-    borderRadius: 'var(--radius-md)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-    position: 'relative',
-  },
-  discountBadge: {
-    position: 'absolute',
-    top: '16px',
-    right: '16px',
-    background: 'var(--deal-badge-bg)',
-    color: 'var(--deal-green)',
     fontWeight: 700,
-    fontSize: '12px',
-    padding: '4px 8px',
-    borderRadius: '4px',
-  },
-  dealTitle: {
-    fontSize: '18px',
+    marginBottom: '24px',
     color: 'var(--text-primary)',
-    marginTop: '16px',
+    borderBottom: '1px solid var(--border-color)',
+    paddingBottom: '12px',
   },
-  dealPrice: {
-    fontSize: '20px',
-    fontWeight: 700,
-    color: 'var(--deal-green)',
-  },
-  strike: {
-    fontSize: '14px',
-    color: 'var(--text-secondary)',
-    textDecoration: 'line-through',
-    fontWeight: 400,
-    marginLeft: '6px',
-  },
-  dealBtn: {
-    background: 'var(--text-primary)',
-    color: '#fff',
-    textAlign: 'center',
+  heroCard: {
+    display: 'block',
     textDecoration: 'none',
-    fontWeight: 600,
-    padding: '10px 0',
-    borderRadius: 'var(--radius-sm)',
-    marginTop: '12px',
+    backgroundColor: 'var(--bg-secondary)',
+    borderRadius: '12px',
+    padding: '40px',
+    border: '1px solid var(--border-color)',
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
   },
-  streamSection: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '24px',
+  heroContent: {
+    maxWidth: '700px',
   },
-  feedGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-    gap: '24px',
-  },
-  articleCard: {
-    padding: '32px',
-    borderRadius: 'var(--radius-md)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-    justifyContent: 'space-between',
-  },
-  cardHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    fontSize: '13px',
-  },
-  category: {
+  featuredBadge: {
+    fontSize: '12px',
+    fontWeight: 700,
     color: 'var(--primary)',
-    fontWeight: 600,
+    letterSpacing: '0.1em',
+    marginBottom: '12px',
+    display: 'block',
   },
-  scoreBadge: {
-    color: 'var(--text-secondary)',
-  },
-  cardTitle: {
-    fontSize: '20px',
-    lineHeight: '1.4',
+  heroTitle: {
+    fontSize: '36px',
+    fontWeight: 800,
     color: 'var(--text-primary)',
+    marginBottom: '16px',
+    lineHeight: '1.2',
   },
-  cardSnippet: {
+  heroExcerpt: {
+    fontSize: '18px',
     color: 'var(--text-secondary)',
+    marginBottom: '24px',
+    lineHeight: '1.6',
+  },
+  heroMeta: {
     fontSize: '14px',
+    color: 'var(--text-tertiary)',
+    fontWeight: 500,
   },
-  cardFooter: {
+  topicPills: {
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: '12px',
+    gap: '12px',
+    flexWrap: 'wrap',
   },
-  cardLink: {
-    color: 'var(--text-primary)',
+  topicPill: {
+    padding: '8px 16px',
+    backgroundColor: 'var(--bg-secondary)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '20px',
     textDecoration: 'none',
-    fontWeight: 600,
-    fontSize: '15px',
-  },
-  typeBadge: {
-    fontSize: '11px',
-    color: 'var(--text-secondary)',
-    border: '1px solid var(--surface-border)',
-    padding: '2px 6px',
-    borderRadius: '4px',
-    textTransform: 'uppercase',
-  },
-  adSlot: {
-    minHeight: '250px',
-    width: '100%',
-    background: 'var(--surface-border)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 'var(--radius-md)',
-    marginTop: '24px',
-  },
-  adPlaceholderText: {
-    color: 'var(--text-secondary)',
-    fontSize: '12px',
-    letterSpacing: '1px',
-    textTransform: 'uppercase'
-  },
-  newsletterModal: {
-    position: 'fixed',
-    bottom: '24px',
-    right: '24px',
-    width: '340px',
-    zIndex: 1000,
-    animation: 'slideUp 0.3s ease-out',
-  },
-  newsletterContent: {
-    padding: '24px',
-    borderRadius: 'var(--radius-lg)',
-    position: 'relative',
-    boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-  },
-  closeBtn: {
-    position: 'absolute',
-    top: '12px',
-    right: '12px',
-    background: 'none',
-    border: 'none',
-    color: 'var(--text-secondary)',
-    cursor: 'pointer',
-    fontSize: '16px',
-  },
-  input: {
-    flex: 1,
-    padding: '10px 14px',
-    borderRadius: 'var(--radius-sm)',
-    border: '1px solid var(--surface-border)',
-    background: 'var(--background)',
     color: 'var(--text-primary)',
-    outline: 'none',
+    fontSize: '14px',
+    fontWeight: 500,
+    transition: 'border-color 0.2s ease',
   },
-  submitBtn: {
-    background: 'var(--primary)',
-    color: '#fff',
+  featuredGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+    gap: '32px',
+  },
+  latestGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+    gap: '32px',
+  },
+  newsletterSection: {
+    backgroundColor: 'var(--bg-secondary)',
+    padding: '60px 40px',
+    borderRadius: '16px',
+    textAlign: 'center',
+    marginBottom: '80px',
+    border: '1px solid var(--border-color)',
+  },
+  newsletterTitle: {
+    fontSize: '28px',
+    fontWeight: 700,
+    color: 'var(--text-primary)',
+    marginBottom: '12px',
+  },
+  newsletterDesc: {
+    fontSize: '16px',
+    color: 'var(--text-secondary)',
+    marginBottom: '32px',
+  },
+  newsletterForm: {
+    display: 'flex',
+    gap: '12px',
+    justifyContent: 'center',
+    maxWidth: '500px',
+    margin: '0 auto',
+  },
+  newsletterInput: {
+    flex: 1,
+    padding: '12px 16px',
+    borderRadius: '8px',
+    border: '1px solid var(--border-color)',
+    fontSize: '16px',
+    backgroundColor: 'var(--background)',
+    color: 'var(--text-primary)',
+  },
+  newsletterBtn: {
+    padding: '12px 24px',
+    borderRadius: '8px',
     border: 'none',
-    padding: '10px 16px',
-    borderRadius: 'var(--radius-sm)',
+    backgroundColor: 'var(--primary)',
+    color: 'white',
+    fontSize: '16px',
     fontWeight: 600,
     cursor: 'pointer',
   }

@@ -1,91 +1,98 @@
-/**
- * page.tsx — SIMIS Natural Language Search Page
- */
+'use client';
 
-"use client";
-
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { API_BASE } from '../../lib/kernel-api';
-
-interface SearchResult {
-  id: string;
-  type: string;
-  title: string;
-  slug: string;
-  metadata: {
-    category: string;
-    author: string;
-  };
-}
+import React, { useState, useEffect } from 'react';
+import { Post } from '@simis/shared';
+import PostCard from '../../components/PostCard';
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<Post[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) return;
+  // Trigger search on query change (with a minor delay / immediate input response)
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults([]);
+      return;
+    }
 
-    setSearching(true);
-    fetch(`${API_BASE}/api/v2/search?q=${encodeURIComponent(query)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.items) {
-          setResults(data.items);
-        } else {
+    const delayDebounce = setTimeout(() => {
+      setIsSearching(true);
+      fetch(`/api/mvp/search?q=${encodeURIComponent(query)}`)
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error('Search failed');
+        })
+        .then((data) => {
+          setResults(data.posts || []);
+        })
+        .catch((err) => {
+          console.error(err);
           setResults([]);
-        }
-        setSearching(false);
-      })
-      .catch(() => {
-        setResults([]);
-        setSearching(false);
-      });
-  };
+        })
+        .finally(() => {
+          setIsSearching(false);
+        });
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(delayDebounce);
+  }, [query]);
 
   return (
-    <div style={searchStyles.container}>
-      <header style={searchStyles.header}>
-        <h1 style={searchStyles.title}>🔎 AI Discovery Search</h1>
-        <p style={searchStyles.sub}>Search tech reviews, hot price drops, and product matrices using natural language.</p>
+    <div className="reader-container fade-in">
+      <header style={styles.header}>
+        <h1 style={{ fontSize: '32px', fontWeight: 800 }}>Search Stories</h1>
+        <p style={{ color: 'var(--text-secondary)' }}>Find articles by title, content, or tag</p>
       </header>
 
-      {/* Search Input Bar */}
-      <form onSubmit={handleSearch} style={searchStyles.form}>
+      {/* Search Bar Input */}
+      <div style={styles.searchBarContainer}>
+        <span style={styles.searchIcon}>🔍</span>
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="e.g. Find noise cancelling headphones with the best battery..."
-          style={searchStyles.input}
+          placeholder="Search topics, titles, or tags..."
+          style={styles.searchInput}
+          autoFocus
         />
-        <button type="submit" style={searchStyles.btn}>Search</button>
-      </form>
+        {query && (
+          <button onClick={() => setQuery('')} style={styles.clearBtn}>
+            ✕
+          </button>
+        )}
+      </div>
 
-      {/* Search Results list */}
-      <div style={searchStyles.results}>
-        {searching && <p>Searching indexes...</p>}
-        
-        {!searching && results.length > 0 && (
-          <div style={searchStyles.grid}>
-            {results.map(item => (
-              <div key={item.id} className="glass-container hover-lift" style={searchStyles.card}>
-                <span style={searchStyles.category}>{item.metadata.category}</span>
-                <h3 style={searchStyles.cardTitle}>{item.title}</h3>
-                <div style={searchStyles.footer}>
-                  <Link href={`/read/${item.slug}`} style={searchStyles.link}>View Details ➔</Link>
-                  <span style={searchStyles.type}>{item.type}</span>
-                </div>
-              </div>
-            ))}
+      {/* Results Section */}
+      <div style={{ marginTop: '24px' }}>
+        {isSearching && (
+          <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>
+            Searching stories...
+          </p>
+        )}
+
+        {!isSearching && results.length > 0 && (
+          <div>
+            <div style={styles.resultsHeader}>
+              Found {results.length} {results.length === 1 ? 'result' : 'results'} for &quot;{query}&quot;
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {results.map((post) => (
+                <PostCard key={post.id} post={post} />
+              ))}
+            </div>
           </div>
         )}
 
-        {!searching && results.length === 0 && query && (
-          <div style={searchStyles.empty}>
-            <p>No results found for &quot;{query}&quot;. Try another search term.</p>
+        {!isSearching && results.length === 0 && query.trim() !== '' && (
+          <div style={styles.emptyState}>
+            <p>No matches found. Try refining your keywords or tags.</p>
+          </div>
+        )}
+
+        {!query.trim() && (
+          <div style={styles.placeholderState}>
+            <p>Type a keyword to discover interesting articles on SIMIS MediaFarm.</p>
           </div>
         )}
       </div>
@@ -93,99 +100,58 @@ export default function SearchPage() {
   );
 }
 
-const searchStyles: Record<string, React.CSSProperties> = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '32px',
-    maxWidth: '800px',
-    margin: '0 auto',
-  },
+const styles: Record<string, React.CSSProperties> = {
   header: {
-    textAlign: 'center',
+    padding: '30px 0 20px 0',
+  },
+  searchBarContainer: {
+    position: 'relative',
     display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
+    alignItems: 'center',
+    width: '100%',
+    borderBottom: '1.5px solid var(--border-focus)',
+    paddingBottom: '8px',
   },
-  title: {
-    fontSize: '32px',
+  searchIcon: {
+    fontSize: '20px',
+    marginRight: '12px',
+    color: 'var(--text-tertiary)',
+  },
+  searchInput: {
+    width: '100%',
+    border: 'none',
+    background: 'transparent',
     color: 'var(--text-primary)',
-  },
-  sub: {
-    color: 'var(--text-secondary)',
-    fontSize: '15px',
-  },
-  form: {
-    display: 'flex',
-    gap: '12px',
-  },
-  input: {
-    flexGrow: 1,
-    padding: '16px 20px',
-    borderRadius: 'var(--radius-sm)',
-    border: '1px solid var(--surface-border)',
-    fontSize: '16px',
-    color: 'var(--text-primary)',
+    fontSize: '22px',
+    fontWeight: 500,
     outline: 'none',
+    fontFamily: 'var(--font-sans)',
   },
-  btn: {
-    background: 'var(--primary)',
-    color: '#fff',
-    border: '0',
-    fontWeight: 600,
-    padding: '0 32px',
-    borderRadius: 'var(--radius-sm)',
+  clearBtn: {
+    background: 'none',
+    border: 'none',
     cursor: 'pointer',
     fontSize: '16px',
+    color: 'var(--text-secondary)',
+    padding: '4px',
   },
-  results: {
-    marginTop: '16px',
-  },
-  grid: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-  },
-  card: {
-    padding: '24px',
-    borderRadius: 'var(--radius-md)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-  category: {
-    color: 'var(--primary)',
-    fontWeight: 600,
+  resultsHeader: {
     fontSize: '13px',
+    color: 'var(--text-secondary)',
     textTransform: 'uppercase',
-  },
-  cardTitle: {
-    fontSize: '18px',
-    color: 'var(--text-primary)',
-  },
-  footer: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: '12px',
-  },
-  link: {
-    color: 'var(--text-primary)',
-    textDecoration: 'none',
     fontWeight: 600,
-    fontSize: '14px',
+    letterSpacing: '0.05em',
+    marginBottom: '16px',
   },
-  type: {
-    fontSize: '11px',
-    color: 'var(--text-secondary)',
-    border: '1px solid var(--surface-border)',
-    padding: '2px 6px',
-    borderRadius: '4px',
-    textTransform: 'uppercase',
-  },
-  empty: {
+  emptyState: {
     textAlign: 'center',
-    padding: '40px',
+    padding: '40px 0',
     color: 'var(--text-secondary)',
-  }
+  },
+  placeholderState: {
+    textAlign: 'center',
+    padding: '60px 0',
+    color: 'var(--text-tertiary)',
+    fontSize: '15px',
+  },
 };

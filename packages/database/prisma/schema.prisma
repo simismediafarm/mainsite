@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model RegistryDefinition {
+  uid               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                String
+  type              String
+  currentVersionUid String?  @map("current_version_uid") @db.Uuid
+  status            String
+  tenantId          String?  @map("tenant_id")
+  environment       String
+  workspace         String?
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  currentVersion    RegistryVersion? @relation("CurrentVersion", fields: [currentVersionUid], references: [uid], onDelete: Restrict)
+  versions          RegistryVersion[] @relation("DefinitionVersions")
+  dependencies      RegistryDependency[] @relation("DefinitionDependencies")
+  dependents        RegistryDependency[] @relation("DefinitionDependents")
+  auditLogs         RegistryAuditLog[] @relation("DefinitionAuditLogs")
+
+  @@unique([type, id, environment, tenantId, workspace], name: "registry_definitions_unique_id")
+  @@index([type, status])
+  @@index([type, environment])
+  @@index([tenantId, environment])
+  @@index([workspace, environment])
+  @@map("registry_definitions")
+}
+
+model RegistryVersion {
+  uid           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  definitionUid String   @map("definition_uid") @db.Uuid
+  versionNumber Int      @map("version_number")
+  status        String
+  payloadHash   String   @map("payload_hash")
+  definition    Json
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  definitionRef RegistryDefinition @relation("DefinitionVersions", fields: [definitionUid], references: [uid], onDelete: Restrict)
+  currentFor    RegistryDefinition[] @relation("CurrentVersion")
+
+  @@map("registry_versions")
+}
+
+model RegistryDependency {
+  uid            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  definitionUid  String   @map("definition_uid") @db.Uuid
+  dependsOnUid   String   @map("depends_on_uid") @db.Uuid
+  dependsOnVersionUid String? @map("depends_on_version_uid") @db.Uuid
+  dependencyMode String   @map("dependency_mode")
+  dependencyType String   @map("dependency_type")
+
+  definition     RegistryDefinition @relation("DefinitionDependencies", fields: [definitionUid], references: [uid], onDelete: Cascade)
+  dependsOn      RegistryDefinition @relation("DefinitionDependents", fields: [dependsOnUid], references: [uid], onDelete: Restrict)
+
+  @@map("registry_dependencies")
+}
+
+model RegistryAuditLog {
+  uid           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  definitionUid String   @map("definition_uid") @db.Uuid
+  action        String
+  performedBy   String   @map("performed_by")
+  performedAt   DateTime @default(now()) @map("performed_at") @db.Timestamptz
+  changes       Json?
+
+  definition    RegistryDefinition @relation("DefinitionAuditLogs", fields: [definitionUid], references: [uid], onDelete: Cascade)
+
+  @@map("registry_audit_logs")
+}
+
+enum LockStrategy {
+  EXCLUSIVE
+  SHARED
+}
+
+model RegistryLock {
+  uid          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lockType     String   @map("lock_type")
+  strategy     LockStrategy @default(EXCLUSIVE)
+  resourceUid  String   @map("resource_uid") @db.Uuid
+  acquiredBy   String   @map("acquired_by")
+  expiresAt    DateTime @map("expires_at") @db.Timestamptz
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Partial unique index created in SQL migration: CREATE UNIQUE INDEX idx_registry_locks_active ON registry_locks (resource_uid, lock_type) WHERE expires_at > NOW();
+
+  @@map("registry_locks")
+}

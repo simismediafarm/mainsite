@@ -2,18 +2,12 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
-import kernelRouter from './routers/kernel';
-import researchRouter from './routers/research';
-import v2Router from './routers/v2';
-import adminRouter from './routers/admin';
-import opsRouter from './routers/ops';
-import publicRouter from './routers/public';
-import { setupRealtimeBridge } from './services/realtime';
-import { authMiddleware } from './middleware/auth';
+import { mvpRouter } from './routers/mvp';
+import { handle } from 'hono/vercel';
 
 const app = new Hono();
 
-// ── Global Middleware ────────────────────────────────────────────────────────
+// Global Middleware
 app.use('*', logger());
 app.use('*', cors({
   origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3000',
@@ -22,30 +16,16 @@ app.use('*', cors({
   credentials: true,
 }));
 
-// ── Public Routes (no auth) ──────────────────────────────────────────────────
-app.get('/health', (c) => c.json({ status: 'ok', service: 'simis-kernel-api' }));
-app.route('/api/v2', v2Router);
+// Mount MVP Blog Platform routes
+app.route('/api/mvp', mvpRouter);
 
-// ── Protected Routes (require valid Supabase JWT or Service Key) ─────────────
-app.use('/kernel/*', authMiddleware);
-app.use('/research/*', authMiddleware);
-app.use('/admin/*', authMiddleware);
-app.use('/api/v2/ops/*', authMiddleware);
+// Health Check
+app.get('/health', (c) => c.json({ status: 'ok', service: 'simis-mediafarm-api' }));
 
-app.route('/kernel', kernelRouter);
-app.route('/research', researchRouter);
-app.route('/admin', adminRouter);
-app.route('/api/v2/ops', opsRouter);
-app.route('/api/v2/public', publicRouter);
-
-
-import { handle } from 'hono/vercel';
-
-// ── Start Server / Export Handler ───────────────────────────────────────────
+// Start Server / Export Handler
 const port = process.env.PORT ? parseInt(process.env.PORT) : 4000;
 if (!process.env.VERCEL) {
-  console.log(`[API] Starting Hono server on port ${port}...`);
-  setupRealtimeBridge();
+  console.log(`[API] Starting Hono SIMIS MediaFarm API on port ${port}...`);
   serve({
     fetch: app.fetch,
     port,

@@ -2,8 +2,8 @@
   "name": "simis-monorepo",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
+    "build": "turbo run build --filter=@simis/api --filter=@simis/web",
+    "dev": "turbo run dev --filter=@simis/api --filter=@simis/web",
     "lint": "turbo run lint",
     "audit": "tsx .agent/audit/run_global_audit.ts",
     "audit:ci": "pnpm run audit",

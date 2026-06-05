@@ -10,5 +10,9 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/index.ts",
+    "src/routers/mvp.ts",
+    "src/store/memory_db.ts"
+  ]
 }

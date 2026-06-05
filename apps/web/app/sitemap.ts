@@ -28,14 +28,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     // Fetch dynamic content slugs
-    const res = await fetch(`${API_BASE}/api/v2/feed`);
+    // We use 127.0.0.1 to avoid IPv6 DNS issues in Node fetch
+    const res = await fetch(`http://127.0.0.1:4000/api/mvp/feed`, { cache: 'no-store' });
     const data = await res.json();
     
-    if (data.items) {
-      data.items.forEach((item: any) => {
+    if (data.posts) {
+      data.posts.forEach((item: any) => {
         routes.push({
-          url: `${baseUrl}/read/${item.slug}`,
-          lastModified: new Date(item.created_at || Date.now()),
+          url: `${baseUrl}/read/${item.slug || item.id}`,
+          lastModified: new Date(item.updatedAt || item.createdAt || Date.now()),
           changeFrequency: 'weekly',
           priority: 0.7,
         });

@@ -1,0 +1,331 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ----------------------------------------------------------------------------
+// PHASE 1: IDENTITY & ACCESS (Auth.js)
+// ----------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("member") // visitor, member, contributor, author, editor, publisher, admin
+  
+  accounts      Account[]
+  sessions      Session[]
+  profile       Profile?
+  
+  workspaceMembers   WorkspaceMember[]
+  publicationMembers PublicationMember[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  
+  access_token       String?  
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ----------------------------------------------------------------------------
+// PHASE 1: CREATOR PROFILE
+// ----------------------------------------------------------------------------
+
+model Profile {
+  id        String   @id @default(uuid()) // Legacy Author ID compatibility
+  userId    String?  @unique // Can be null for legacy authors not yet migrated
+  name      String
+  role      String   @default("author")
+  bio       String?
+  avatar    String?  
+  createdAt DateTime @default(now())
+  
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  posts     Post[]
+  metrics   AuthorMetric?
+}
+
+// ----------------------------------------------------------------------------
+// PHASE 2: WORKSPACE & PUBLICATIONS
+// ----------------------------------------------------------------------------
+
+model Workspace {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  type        String   @default("personal") // personal, publication, organization
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     WorkspaceMember[]
+  publications Publication[]
+}
+
+model WorkspaceMember {
+  id          String   @id @default(uuid())
+  workspaceId String
+  userId      String
+  role        String   @default("member") // admin, editor, contributor, member
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+}
+
+model Publication {
+  id          String   @id @default(uuid())
+  workspaceId String
+  name        String
+  slug        String   @unique
+  description String?
+  
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members     PublicationMember[]
+  posts       Post[]
+}
+
+model PublicationMember {
+  id            String   @id @default(uuid())
+  publicationId String
+  userId        String
+  role          String   @default("author")
+
+  publication   Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([publicationId, userId])
+}
+
+// ----------------------------------------------------------------------------
+// CONTENT PLATFORM (Legacy V1.3 -> V1.4)
+// ----------------------------------------------------------------------------
+
+model Post {
+  id             String   @id @default(uuid())
+  title          String
+  slug           String   @unique @default(uuid())
+  content        String
+  excerpt        String?
+  
+  authorId       String   // References Profile (Legacy Author)
+  publicationId  String?  // References Publication (V1.4)
+  
+  status         String   @default("draft") // draft, pending_review, approved, published, featured, archived
+  tier           String   @default("tier_1") // tier_1 (UGC), tier_2 (Curated), tier_3 (Programmatic)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  views          Int      @default(0)
+  likes          Int      @default(0)
+  clicks         Int      @default(0)
+  ctr            Float    @default(0.0)
+
+  rpmReal        Float    @default(0.0)
+  cpmReal        Float    @default(0.0)
+  revenueTotal   Float    @default(0.0)
+
+  editorialBoost Int      @default(0)
+  trustScore     Int      @default(50)
+
+  author         Profile      @relation(fields: [authorId], references: [id])
+  publication    Publication? @relation(fields: [publicationId], references: [id])
+  
+  adEvents       AdEvent[]
+  tags           Tag[]
+  
+  seoMetadata        SeoMetadata?
+  clusterMemberships ClusterMembership[]
+  distributionEvents DistributionEvent[]
+  affiliateLinks     AffiliateLink[]
+  metrics            ContentMetric?
+}
+
+model Tag {
+  id    String @id @default(uuid())
+  name  String @unique
+  posts Post[]
+}
+
+model AdEvent {
+  id           String   @id @default(uuid())
+  postId       String
+  type         String   // impression, click, conversion
+  provider     String   // GoogleAdManager, Affiliate
+  impression   Boolean  @default(false)
+  click        Boolean  @default(false)
+  conversion   Boolean  @default(false)
+  revenueValue Float    @default(0.0)
+  timestamp    DateTime @default(now())
+
+  post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model RssSource {
+  id            String   @id @default(uuid())
+  name          String
+  url           String   @unique
+  category      String
+  fetchInterval Int      @default(30) // in minutes
+  lastFetched   DateTime?
+  status        String   @default("active") // active, paused, error
+}
+
+model RssEntry {
+  id            String   @id @default(uuid())
+  sourceId      String
+  title         String
+  url           String   @unique
+  publishedAt   DateTime
+  content       String?
+  status        String   @default("pending") // pending, processed, rejected
+}
+
+model ApiSource {
+  id            String   @id @default(uuid())
+  provider      String   @unique
+  endpoint      String
+  category      String
+  status        String   @default("active")
+}
+
+model ContentCandidate {
+  id             String   @id @default(uuid())
+  sourceType     String   // rss, api, webhook, editorial
+  sourceUrl      String?
+  title          String
+  rawContent     String
+  extractedTags  String?
+  normalizedData String?  // JSON string
+  status         String   @default("queued") // queued, enriched, published, rejected
+  createdAt      DateTime @default(now())
+}
+
+model TopicCluster {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  parent      String?  
+  
+  memberships ClusterMembership[]
+  metrics     TopicMetric?
+}
+
+model ClusterMembership {
+  id          String   @id @default(uuid())
+  postId      String
+  clusterId   String
+  role        String   @default("spoke") // hub, spoke
+
+  post        Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  cluster     TopicCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, clusterId])
+}
+
+model SeoMetadata {
+  id             String   @id @default(uuid())
+  postId         String   @unique
+  seoTitle       String?
+  seoDescription String?
+  canonicalUrl   String?
+  openGraph      String?  // JSON string
+  twitterCard    String?  // JSON string
+  jsonLd         String?  // JSON string
+
+  post           Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model DistributionEvent {
+  id           String   @id @default(uuid())
+  postId       String
+  channel      String   // sitemap, rss, social, newsletter
+  status       String   @default("success") // success, failed
+  timestamp    DateTime @default(now())
+
+  post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model AffiliateLink {
+  id           String   @id @default(uuid())
+  postId       String
+  provider     String   // amazon, impact, cj
+  productUrl   String
+  affiliateUrl String
+  clicks       Int      @default(0)
+  conversions  Int      @default(0)
+  revenue      Float    @default(0.0)
+
+  post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model ContentMetric {
+  id              String   @id @default(uuid())
+  postId          String   @unique
+  sessionDepthAvg Float    @default(0.0)
+  returningUsers  Int      @default(0)
+  bounceRate      Float    @default(0.0)
+  timeOnPageAvg   Float    @default(0.0)
+
+  post            Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model AuthorMetric {
+  id              String   @id @default(uuid())
+  authorId        String   @unique
+  totalReads      Int      @default(0)
+  totalRevenue    Float    @default(0.0)
+  followerCount   Int      @default(0)
+
+  profile         Profile  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model TopicMetric {
+  id              String   @id @default(uuid())
+  clusterId       String   @unique
+  totalViews      Int      @default(0)
+  organicTraffic  Int      @default(0)
+  clusterRevenue  Float    @default(0.0)
+  rankingKeywords Int      @default(0)
+
+  cluster         TopicCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+}
