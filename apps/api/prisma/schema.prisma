@@ -1,30 +1,31 @@
 generator client {
   provider        = "prisma-client-js"
   output          = "../../../node_modules/.prisma/client"
-  previewFeatures = ["multiSchema"]
+  previewFeatures = ["multiSchema", "postgresqlExtensions"]
 }
 
 generator client_api {
   provider        = "prisma-client-js"
   output          = "../node_modules/.prisma/client"
-  previewFeatures = ["multiSchema"]
+  previewFeatures = ["multiSchema", "postgresqlExtensions"]
 }
 
 generator client_web {
   provider        = "prisma-client-js"
   output          = "../../web/node_modules/.prisma/client"
-  previewFeatures = ["multiSchema"]
+  previewFeatures = ["multiSchema", "postgresqlExtensions"]
 }
 
 generator client_worker {
   provider        = "prisma-client-js"
   output          = "../../worker/node_modules/.prisma/client"
-  previewFeatures = ["multiSchema"]
+  previewFeatures = ["multiSchema", "postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  schemas  = ["public", "registry", "entity", "attention", "analytics", "integration"]
+  provider   = "postgresql"
+  schemas    = ["public", "registry", "entity", "attention", "analytics", "integration"]
+  extensions = [pgvector(map: "vector")]
 }
 
 // ----------------------------------------------------------------------------
@@ -69,6 +70,7 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
   @@schema("public")
 }
 
@@ -78,6 +80,7 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
 
   @@schema("public")
 }
@@ -87,7 +90,8 @@ model VerificationToken {
   token      String   @unique
   expires    DateTime
 
-  @@unique([identifier, token])
+  
+  @@id([identifier, token])
   @@schema("public")
 }
 
@@ -142,6 +146,7 @@ model WorkspaceMember {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, userId])
+  @@index([userId])
   @@schema("public")
 }
 
@@ -155,6 +160,7 @@ model Publication {
   workspace Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   members   PublicationMember[]
   posts     Post[]
+  @@index([workspaceId])
 
   @@schema("public")
 }
@@ -169,6 +175,7 @@ model PublicationMember {
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([publicationId, userId])
+  @@index([userId])
   @@schema("public")
 }
 
@@ -242,6 +249,7 @@ model AdEvent {
   timestamp    DateTime @default(now())
 
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@index([postId])
 
   @@schema("analytics")
 }
@@ -317,6 +325,7 @@ model ClusterMembership {
   cluster TopicCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
 
   @@unique([postId, clusterId])
+  @@index([clusterId])
   @@schema("public")
 }
 
@@ -343,6 +352,7 @@ model DistributionEvent {
   timestamp DateTime @default(now())
 
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@index([postId])
 
   @@schema("analytics")
 }
@@ -358,6 +368,7 @@ model AffiliateLink {
   revenue      Float  @default(0.0)
 
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@index([postId])
 
   @@schema("analytics")
 }
@@ -812,11 +823,12 @@ model RankingExperiment {
 // PHASE 4: UNIVERSAL INTELLIGENCE
 // ----------------------------------------------------------------------------
 model IntelligenceSnapshot {
-  id         String @id @default(uuid())
-  inputHash  String @unique @default(uuid())
-  taskType   String @default("unknown")
-  modelUsed  String @default("unknown")
-  confidence Float  @default(0)
+  id         String                       @id @default(uuid())
+  inputHash  String                       @unique @default(uuid())
+  taskType   String                       @default("unknown")
+  modelUsed  String                       @default("unknown")
+  confidence Float?
+  embedding  Unsupported("vector(1536)")?
 
   entityId                   String
   traceId                    String
@@ -852,7 +864,7 @@ model LLMCallLog {
   model     String
   taskType  String
   latencyMs Int
-  cost      Float
+  cost      Decimal  @db.Decimal(10, 6)
   status    String
   createdAt DateTime @default(now())
 
