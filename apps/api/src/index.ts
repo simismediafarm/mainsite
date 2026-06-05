@@ -5,6 +5,7 @@ import { logger } from 'hono/logger';
 import { mvpRouter } from './routers/mvp';
 import { registryRouter } from './routers/registry';
 import { handle } from 'hono/vercel';
+import { adminRouter } from './routers/admin/index';
 
 const app = new Hono();
 
@@ -12,7 +13,7 @@ const app = new Hono();
 app.use('*', logger());
 app.use('*', cors({
   origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3000',
-  allowHeaders: ['Content-Type', 'Authorization'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-SIMIS-OPS-KEY'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
 }));
@@ -22,6 +23,9 @@ app.route('/api/mvp', mvpRouter);
 
 // Mount SIMIS V2.2 Registries
 app.route('/api/v1/registry', registryRouter);
+
+// Mount Control Tower Admin API (v3.1) — Command, Metrics, Trace
+app.route('/api/admin', adminRouter);
 
 // Health Check
 app.get('/health', (c) => c.json({ status: 'ok', service: 'simis-mediafarm-api' }));

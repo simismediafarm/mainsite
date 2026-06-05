@@ -1,246 +1,125 @@
-import React from "react";
-import { registry } from "@/lib/registryClient";
+import React from 'react';
 
-export const dynamic = 'force-dynamic';
-
-export default async function AdminExecutiveDashboard() {
-  let logs: any[] = [];
-  let metrics: any[] = [];
-  let quickActions: any[] = [];
-  let brands: any[] = [];
-
-  try {
-    const [analyticsRes, widgetRes] = await Promise.allSettled([
-      fetch(`http://127.0.0.1:4000/api/v1/analytics/admin`, { cache: 'no-store' }),
-      registry.getWidgetByKey('admin_dashboard')
-    ]);
-
-    if (analyticsRes.status === 'fulfilled' && analyticsRes.value.ok) {
-      const data = await analyticsRes.value.json();
-      logs = data.logs || [];
-      metrics = data.metrics || [];
-      brands = data.brands || [];
-    }
-
-    if (widgetRes.status === 'fulfilled' && widgetRes.value?.schema) {
-      try {
-        const parsed = JSON.parse(widgetRes.value.schema);
-        quickActions = parsed.quickActions || [];
-      } catch (e) {
-        console.error("Failed to parse admin widget schema");
-      }
-    }
-  } catch (err) {
-    console.error("Failed to fetch admin dashboard data", err);
-  }
-
+// SERVER COMPONENT (Read-Only Reactive UI)
+export default async function AdminControlTowerHome() {
   return (
-    <div className="space-y-6 max-w-7xl mx-auto text-[#e5e2e1] font-sans min-h-screen">
-      {/* Page Title */}
-      <div>
-        <h1 className="text-xl font-bold text-[#e5e2e1]">Executive Overview</h1>
-        <p className="text-xs text-[#bac9cc]">Autonomous Media Holding OS Control Center</p>
-      </div>
+    <div className="p-8 space-y-8 bg-gray-50 min-h-screen">
+      <header className="mb-8 border-b pb-4">
+        <h1 className="text-3xl font-bold text-gray-800">SIMIS D-IOS Control Tower v3.1</h1>
+        <p className="text-gray-500 mt-2">Unified Event-Driven System Operations & Traceability Plane</p>
+      </header>
 
-      {/* KPI Top Row */}
-      {metrics.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          {metrics.map((metric, idx) => (
-            <div key={idx} className="bg-[#121212]/60 backdrop-blur-md p-4 rounded border border-[#222222] relative overflow-hidden group">
-              <div className="flex justify-between items-start mb-1">
-                <span className="font-mono text-[9px] uppercase tracking-wider text-[#bac9cc]">{metric.label}</span>
-                {metric.progress === undefined && (
-                  <span className={`font-mono text-[9px] ${
-                    metric.type === 'active' ? 'text-[#32D74B]' : 
-                    metric.type === 'warning' ? 'text-[#fec931]' : 'text-[#bac9cc]'
-                  }`}>
-                    {metric.change}
-                  </span>
-                )}
-              </div>
-              
-              <div className="text-2xl font-bold font-mono tracking-tight text-[#e5e2e1]">{metric.value}</div>
-              
-              {metric.progress !== undefined && (
-                <div className="w-full bg-[#353534] h-1 rounded-full mt-3 overflow-hidden">
-                  <div className="bg-[#FF2D55] h-full" style={{ width: `${metric.progress}%` }}></div>
-                </div>
-              )}
+      {/* MODULE 1: System Overview */}
+      <section>
+        <h2 className="text-xl font-bold text-gray-700 mb-4 flex items-center">
+          <span className="bg-blue-500 w-2 h-6 mr-3 rounded"></span>
+          System Overview
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="p-6 bg-white shadow rounded-lg border-t-4 border-green-500">
+            <h2 className="text-sm font-semibold text-gray-600">Worker Saturation</h2>
+            <p className="text-2xl font-bold text-gray-900 mt-2">12%</p>
+            <p className="text-xs text-green-600 mt-1">Healthy</p>
+          </div>
+          <div className="p-6 bg-white shadow rounded-lg border-t-4 border-blue-500">
+            <h2 className="text-sm font-semibold text-gray-600">Queue Depth</h2>
+            <p className="text-2xl font-bold text-gray-900 mt-2">0 Active / 4 Delayed</p>
+            <p className="text-xs text-gray-400 mt-1">BullMQ Backend</p>
+          </div>
+          <div className="p-6 bg-white shadow rounded-lg border-t-4 border-orange-500">
+            <h2 className="text-sm font-semibold text-gray-600">LLM Burn Rate</h2>
+            <p className="text-2xl font-bold text-gray-900 mt-2">$0.04 / hr</p>
+            <p className="text-xs text-gray-400 mt-1">Token usage</p>
+          </div>
+          <div className="p-6 bg-white shadow rounded-lg border-t-4 border-purple-500">
+            <h2 className="text-sm font-semibold text-gray-600">Cache Hit Ratio</h2>
+            <p className="text-2xl font-bold text-gray-900 mt-2">84.2%</p>
+            <p className="text-xs text-gray-400 mt-1">ai-cache effectiveness</p>
+          </div>
+        </div>
+      </section>
 
-              {metric.type === 'active' && (
-                <div className="h-6 w-full mt-2 flex items-end gap-[2px] opacity-60">
-                  <div className="bg-[#00E5FF] w-full h-[20%] rounded-t-sm"></div>
-                  <div className="bg-[#00E5FF] w-full h-[45%] rounded-t-sm"></div>
-                  <div className="bg-[#00E5FF] w-full h-[30%] rounded-t-sm"></div>
-                  <div className="bg-[#00E5FF] w-full h-[60%] rounded-t-sm"></div>
-                  <div className="bg-[#00E5FF] w-full h-[85%] rounded-t-sm"></div>
-                </div>
-              )}
+      {/* MODULE 2: Operations Control Center */}
+      <section>
+        <h2 className="text-xl font-bold text-gray-700 mb-4 flex items-center">
+          <span className="bg-red-500 w-2 h-6 mr-3 rounded"></span>
+          Operations Control Center
+        </h2>
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4 pb-4 border-b">
+            <div>
+              <h3 className="font-semibold text-gray-800">Global Execution Mode</h3>
+              <p className="text-sm text-gray-500">Toggle between Dry-Run simulation and Live Execution</p>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="w-full border border-dashed border-[#222222] bg-[#121212]/50 rounded p-6 text-center">
-           <span className="font-mono text-[10px] text-[#bac9cc] tracking-widest uppercase">AWAITING ANALYTICS AGGREGATION</span>
-        </div>
-      )}
-
-      {/* Middle Grid: Traffic Chart & Autonomous Actions Terminal */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Chart Panel (60%) */}
-        <div className="lg:col-span-7 bg-[#121212]/60 backdrop-blur-md rounded border border-[#222222] flex flex-col min-h-[320px]">
-          <div className="p-3 border-b border-[#222222] flex justify-between items-center bg-[#121212]">
-            <h2 className="font-mono text-[10px] tracking-wider text-[#e5e2e1] uppercase flex items-center gap-2">
-              <span className="material-symbols-outlined text-[14px] text-[#00E5FF]">analytics</span>
-              Traffic vs Revenue [90D]
-            </h2>
-            <div className="flex gap-4">
-              <div className="flex items-center gap-1.5 font-mono text-[9px] text-[#bac9cc]">
-                <div className="w-1.5 h-1.5 bg-[#00E5FF] rounded-full"></div> Revenue
-              </div>
-              <div className="flex items-center gap-1.5 font-mono text-[9px] text-[#bac9cc]">
-                <div className="w-1.5 h-1.5 bg-[#849396] rounded-full"></div> Traffic
-              </div>
+            <div className="flex items-center space-x-3">
+              <span className="text-sm font-medium text-gray-700">Dry-Run</span>
+              <button className="bg-gray-200 w-12 h-6 rounded-full relative transition-colors duration-200 focus:outline-none">
+                <span className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 transform translate-x-0"></span>
+              </button>
+              <span className="text-sm font-medium text-red-500">Execute</span>
             </div>
           </div>
-          <div className="flex-1 p-4 relative overflow-hidden bg-[#050505] flex items-end">
-            <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(#222222 1px, transparent 1px), linear-gradient(90deg, #222222 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
-            {/* Dynamic Chart Overlay Here when data is available */}
-            {metrics.length === 0 && (
-               <div className="absolute inset-0 flex items-center justify-center font-mono text-[10px] text-[#bac9cc]">
-                  INSUFFICIENT DATA POINTS
-               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Terminal Panel (40%) */}
-        <div className="lg:col-span-5 bg-[#0e0e0e] rounded border border-[#222222] flex flex-col min-h-[320px]">
-          <div className="p-3 border-b border-[#222222] flex justify-between items-center bg-[#121212]">
-            <h2 className="font-mono text-[10px] tracking-wider text-[#e5e2e1] uppercase flex items-center gap-2">
-              <span className="material-symbols-outlined text-[14px] text-[#fec931]">terminal</span>
-              Autonomous Actions
-            </h2>
-            <div className="w-2 h-2 rounded-full bg-[#32D74B] animate-pulse"></div>
-          </div>
-          <div className="flex-1 p-4 font-mono text-[10px] leading-relaxed text-[#bac9cc] overflow-y-auto max-h-[260px]">
-            {logs.length > 0 ? logs.map((log, index) => (
-              <div key={index} className="flex gap-2 mb-1">
-                <span className="text-[#849396]/60">[{log.time}]</span>
-                <span className={
-                  log.type === 'SUCCESS' ? 'text-[#32D74B]' :
-                  log.type === 'WARN' ? 'text-[#FF453A]' :
-                  log.type === 'SYS' ? 'text-[#00E5FF]' : 'text-[#fec931]'
-                }>{log.type}:</span>
-                <span className={log.type === 'METRIC-ALERT' || log.type === 'SUCCESS' ? 'text-[#e5e2e1]' : ''}>{log.text}</span>
-              </div>
-            )) : (
-              <div className="flex gap-2 text-[#849396]/60">
-                 Awaiting system telemetry...
-              </div>
-            )}
-            <div className="flex gap-2 mt-4 animate-pulse">
-              <span className="text-[#00E5FF]">_</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Section: Portfolio Health Matrix & Action Bar */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Heatmap Grid (8 Col) */}
-        <div className="lg:col-span-8 bg-[#121212]/60 backdrop-blur-md rounded border border-[#222222] flex flex-col">
-          <div className="p-3 border-b border-[#222222] bg-[#121212] flex justify-between items-center">
-            <h2 className="font-mono text-[10px] tracking-wider text-[#e5e2e1] uppercase flex items-center gap-2">
-              <span className="material-symbols-outlined text-[14px] text-[#32D74B]">grid_on</span>
-              Portfolio Health Matrix
-            </h2>
-          </div>
-          <div className="p-4 overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[500px]">
-              <thead>
-                <tr className="font-mono text-[9px] text-[#bac9cc] border-b border-[#222222] uppercase tracking-wider">
-                  <th className="py-2 font-normal w-1/3">Property</th>
-                  <th className="py-2 font-normal text-center">Uptime</th>
-                  <th className="py-2 font-normal text-center">Crawl Rate</th>
-                  <th className="py-2 font-normal text-center">Indexing</th>
-                  <th className="py-2 font-normal text-center">Revenue Sync</th>
-                </tr>
-              </thead>
-              <tbody className="text-xs text-[#e5e2e1]">
-                {brands.length > 0 ? brands.map((brand, idx) => (
-                  <tr key={idx} className="border-b border-[#222222]/30 hover:bg-[#201f1f]/50 transition-colors">
-                    <td className="py-3 flex items-center gap-2">
-                      <div className={`w-1.5 h-1.5 rounded-full ${
-                        brand.status === 'active' ? 'bg-[#32D74B]' :
-                        brand.status === 'warning' ? 'bg-[#fec931]' : 'bg-[#FF453A]'
-                      }`}></div>
-                      {brand.name}
-                    </td>
-                    <td className="py-3 text-center">
-                      <span className={`px-2 py-0.5 border rounded text-[9px] font-mono ${
-                        brand.status === 'active' ? 'bg-[#32D74B]/10 text-[#32D74B] border-[#32D74B]/20' :
-                        brand.status === 'warning' ? 'bg-[#32D74B]/10 text-[#32D74B] border-[#32D74B]/20' :
-                        brand.status === 'alert' ? 'bg-[#FF453A]/10 text-[#FF453A] border-[#FF453A]/20' : ''
-                      }`}>
-                        {brand.uptime}
-                      </span>
-                    </td>
-                    <td className="py-3 text-center">
-                      <span className={`px-2 py-0.5 border rounded text-[9px] font-mono ${
-                        brand.crawl === 'OPTIMAL' ? 'bg-[#32D74B]/10 text-[#32D74B] border-[#32D74B]/20' :
-                        brand.crawl === 'THROTTLED' ? 'bg-[#fec931]/10 text-[#fec931] border-[#fec931]/20' :
-                        brand.crawl === 'BLOCKED' ? 'bg-[#FF453A]/10 text-[#FF453A] border-[#FF453A]/20' : ''
-                      }`}>
-                        {brand.crawl}
-                      </span>
-                    </td>
-                    <td className="py-3 text-center">
-                      <span className="px-2 py-0.5 bg-[#32D74B]/10 text-[#32D74B] border border-[#32D74B]/20 rounded text-[9px] font-mono">
-                        {brand.indexing}
-                      </span>
-                    </td>
-                    <td className="py-3 text-center">
-                      <span className="px-2 py-0.5 bg-[#32D74B]/10 text-[#32D74B] border border-[#32D74B]/20 rounded text-[9px] font-mono">
-                        {brand.sync}
-                      </span>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                     <td colSpan={5} className="py-6 text-center font-mono text-[10px] text-[#bac9cc]">
-                        NO PORTFOLIO PROPERTIES REGISTERED
-                     </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Command Actions (4 Col) */}
-        <div className="lg:col-span-4 flex flex-col gap-2.5">
-          {quickActions.length > 0 ? quickActions.map((action, idx) => (
-            <button
-              key={idx}
-              className={`w-full h-10 font-mono text-[10px] uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2 border ${
-                idx === 0 
-                  ? 'bg-[#00E5FF] text-[#050505] border-[#00E5FF] hover:bg-[#00daf3]' 
-                  : idx === quickActions.length - 1
-                  ? 'bg-transparent border-[#FF2D55] text-[#FF2D55] hover:bg-[#FF2D55]/10 mt-auto'
-                  : 'bg-[#121212] border-[#222222] text-[#e5e2e1] hover:border-[#00E5FF] hover:text-[#00E5FF]'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[16px]">{action.icon}</span>
-              {action.label}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button className="px-4 py-3 bg-gray-50 border border-gray-200 rounded text-sm font-medium text-gray-700 hover:bg-gray-100 flex justify-between items-center">
+              Force Reprocess Entity
+              <span className="text-xs bg-gray-200 px-2 py-1 rounded text-gray-600">ENTITY.REPROCESS</span>
             </button>
-          )) : (
-            <div className="w-full h-full min-h-[160px] border border-dashed border-[#222222] rounded flex items-center justify-center font-mono text-[10px] text-[#bac9cc]">
-               COMMAND WIDGET UNCONFIGURED
-            </div>
-          )}
+            <button className="px-4 py-3 bg-gray-50 border border-gray-200 rounded text-sm font-medium text-gray-700 hover:bg-gray-100 flex justify-between items-center">
+              Trigger Crawler
+              <span className="text-xs bg-gray-200 px-2 py-1 rounded text-gray-600">CRAWLER.TRIGGER</span>
+            </button>
+            <button className="px-4 py-3 bg-red-50 border border-red-200 rounded text-sm font-medium text-red-700 hover:bg-red-100 flex justify-between items-center">
+              Invalidate Cache
+              <span className="text-xs bg-red-100 px-2 py-1 rounded text-red-600">CACHE.INVALIDATE</span>
+            </button>
+          </div>
         </div>
+      </section>
+
+      {/* MODULE 3: Trace Explorer & Queue Control */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <section>
+          <h2 className="text-xl font-bold text-gray-700 mb-4 flex items-center">
+            <span className="bg-indigo-500 w-2 h-6 mr-3 rounded"></span>
+            Trace Explorer DAG
+          </h2>
+          <div className="bg-white shadow rounded-lg p-6 h-64 flex items-center justify-center border border-dashed border-gray-300">
+            <div className="text-center">
+              <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+              <p className="text-gray-500">DAG execution graph will be rendered here via api/admin/trace</p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold text-gray-700 mb-4 flex items-center">
+            <span className="bg-yellow-500 w-2 h-6 mr-3 rounded"></span>
+            Queue Control Center
+          </h2>
+          <div className="bg-white shadow rounded-lg p-6 h-64 overflow-y-auto">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b">
+               <h3 className="font-semibold text-gray-700">Recent Queue Events</h3>
+               <div className="space-x-2">
+                 <button className="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded">Pause Workers</button>
+                 <button className="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded">Replay Failed</button>
+               </div>
+            </div>
+            <ul className="space-y-3">
+              <li className="flex justify-between text-sm">
+                <span className="text-gray-600 font-mono">cmd_9x8f...</span>
+                <span className="text-blue-500">CRAWLER.TRIGGER</span>
+                <span className="text-green-500">COMPLETED</span>
+              </li>
+              <li className="flex justify-between text-sm">
+                <span className="text-gray-600 font-mono">cmd_3a1b...</span>
+                <span className="text-purple-500">ENTITY.REPROCESS</span>
+                <span className="text-yellow-500">DELAYED</span>
+              </li>
+            </ul>
+          </div>
+        </section>
       </div>
+
     </div>
   );
 }

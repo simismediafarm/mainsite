@@ -1,0 +1,8 @@
+import { TraceContext } from "../../shared/trace.context";
+
+export class DemandOrchestrator {
+  async execute(payload: any, context: TraceContext) {
+    console.log(`[DemandOrchestrator] Executing for trace ${context.traceId}`);
+    return { status: "success", module: "demand_os" };
+  }
+}

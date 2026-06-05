@@ -239,7 +239,7 @@ export default async function HomePage() {
           <div className="bg-[#00E5FF]/5 border border-[#00E5FF]/20 p-5 flex flex-col gap-3 text-center rounded-sm">
             <span className="material-symbols-outlined text-[#00E5FF] text-2xl mx-auto">mail</span>
             <h3 className="text-sm font-bold text-[#e5e2e1]">The Daily Synthesis</h3>
-            <p className="text-[11px] text-[#bac9cc] leading-normal">Executive summary of the day's critical data, delivered to your inbox.</p>
+            <p className="text-[11px] text-[#bac9cc] leading-normal">Executive summary of the day&apos;s critical data, delivered to your inbox.</p>
             <div className="flex flex-col gap-2 mt-1">
               <input className="bg-[#050505] border border-[#222222] px-3 py-1.5 text-xs text-[#e5e2e1] focus:border-[#00E5FF] outline-none text-center rounded-sm placeholder-[#bac9cc]/40" placeholder="operator@domain.com" type="email"/>
               <button className="bg-[#00E5FF] text-[#050505] text-xs font-bold py-2 rounded-sm hover:bg-[#00daf3] transition-colors uppercase tracking-wider">SUBSCRIBE</button>

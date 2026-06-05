@@ -1,0 +1,165 @@
+{
+  "audit_meta": {
+    "skill": "simis-system-audit",
+    "version": "3.1",
+    "timestamp": "2026-06-05T17:43:16.377Z",
+    "root": "/Users/mac/Downloads/PROYEK/SIMIS"
+  },
+  "executive_summary": {
+    "overall_health_score": 33,
+    "total_issues": 9,
+    "by_severity": {
+      "critical": 2,
+      "high": 4,
+      "medium": 3,
+      "low": 0
+    },
+    "critical_violations": [
+      "SIMIS-001: Role derived from user.user_metadata.role — user-editable field used for authorization.",
+      "SIMIS-002: SSE /telemetry/stream has while(true) loop with no abort signal check."
+    ],
+    "top_risks": [
+      "user_metadata RBAC allows privilege escalation by any authenticated user",
+      "SQLite/Postgres split makes MVP layer invisible to EventQueueLog and traceId",
+      "SSE infinite loop without abort check causes memory leak on every connection"
+    ],
+    "top_optimizations": [
+      "Implement checkSemanticCache with pgvector to reduce LLM API costs by ~30-60%",
+      "Add BullMQ removeOnComplete/removeOnFail to prevent Redis memory exhaustion",
+      "Add EventQueueLog.status index to fix slow metrics queries"
+    ]
+  },
+  "issue_catalog": [
+    {
+      "issue_id": "SIMIS-001",
+      "severity": "critical",
+      "category": "security",
+      "location": "apps/api/src/core/permission_guard.ts:33",
+      "description": "Role derived from user.user_metadata.role — user-editable field used for authorization.",
+      "impact": "Any authenticated user can escalate to ADMIN role by setting user_metadata.role = \"admin\".",
+      "root_cause": "Supabase user_metadata is writable by users. Should use app_metadata (server-controlled).",
+      "recommended_fix": "Replace user.user_metadata.role with user.app_metadata?.role in permission_guard.ts."
+    },
+    {
+      "issue_id": "SIMIS-002",
+      "severity": "critical",
+      "category": "bug",
+      "location": "apps/api/src/routers/admin.ts:174",
+      "description": "SSE /telemetry/stream has while(true) loop with no abort signal check.",
+      "impact": "Memory leak: every client connection keeps a live timer and stream handle after disconnect.",
+      "root_cause": "Missing c.req.raw.signal.aborted guard (correctly implemented in mvp.ts:174).",
+      "recommended_fix": "Add: while (!c.req.raw.signal.aborted) { ... } and signal.addEventListener(\"abort\", cleanup)."
+    },
+    {
+      "issue_id": "SIMIS-003",
+      "severity": "high",
+      "category": "architecture",
+      "location": "apps/api/src/routers/mvp.ts, apps/api/src/services/ad_auction_engine.ts, apps/api/src/services/api_engine.ts, apps/api/src/services/curation_engine.ts, apps/api/src/services/editorial_engine.ts, apps/api/src/services/feed_engine.ts, apps/api/src/services/ingestion.ts, apps/api/src/services/revenue_engine.ts, apps/api/src/services/rss_engine.ts, apps/api/src/services/ugc_engine.ts",
+      "description": "10 service(s) write to SQLite store instead of PostgreSQL/EventQueueLog.",
+      "impact": "MVP post CRUD operations are invisible to traceId, EventQueueLog, and BullMQ workers.",
+      "root_cause": "MVP layer predates v3.x event-driven architecture and was never migrated.",
+      "recommended_fix": "Migrate apps/api/src/store/sqlite_db.ts reads/writes to Prisma PostgreSQL. Route mutations through EventQueueLog."
+    },
+    {
+      "issue_id": "SIMIS-004",
+      "severity": "high",
+      "category": "performance",
+      "location": "packages/ai-cache/src/cache.ts:44",
+      "description": "checkSemanticCache() always returns null — semantic deduplication is non-functional.",
+      "impact": "Every AI task triggers a live LLM API call regardless of prior identical inputs. 100% LLM cost with no cache savings.",
+      "root_cause": "Placeholder left during initial implementation; pgvector integration not completed.",
+      "recommended_fix": "Implement cosine similarity search: SELECT ... ORDER BY embedding <=> $1 LIMIT 1 using Prisma+pgvector."
+    },
+    {
+      "issue_id": "SIMIS-005",
+      "severity": "high",
+      "category": "performance",
+      "location": "apps/worker/src/ai.worker.ts",
+      "description": "BullMQ workers have no removeOnComplete or removeOnFail configuration.",
+      "impact": "Completed/failed jobs accumulate in Redis indefinitely, eventually exhausting memory.",
+      "root_cause": "Default BullMQ behavior retains all job records unless explicitly configured.",
+      "recommended_fix": "Add { removeOnComplete: { count: 1000 }, removeOnFail: { count: 500 } } to both Worker constructors."
+    },
+    {
+      "issue_id": "SIMIS-006",
+      "severity": "medium",
+      "category": "schema",
+      "location": "apps/api/prisma/schema.prisma:EventQueueLog",
+      "description": "EventQueueLog has no index on status column.",
+      "impact": "GET /api/admin/metrics queries WHERE status = \"QUEUED\" — full table scan without index.",
+      "root_cause": "New fields (traceId, actor, source, mode) were indexed but status was missed.",
+      "recommended_fix": "Add @@index([status]) to EventQueueLog model, then run: prisma migrate dev --name add-event-status-index"
+    },
+    {
+      "issue_id": "SIMIS-007",
+      "severity": "medium",
+      "category": "bug",
+      "location": "packages/ai-router/src/router.ts:82",
+      "description": "Quota INCRBY followed by separate EXPIRE is not atomic — race condition possible.",
+      "impact": "Under concurrent load, the quota key may never get an expiry set, leading to permanent quota exhaustion.",
+      "root_cause": "Two separate Redis commands with no transaction or Lua script.",
+      "recommended_fix": "Replace with: await redis.set(key, 1, \"EX\", 86400, \"NX\") or use Lua SET+EXPIRE atomically."
+    },
+    {
+      "issue_id": "SIMIS-008",
+      "severity": "high",
+      "category": "architecture",
+      "location": "apps/api/src/core/orchestrator.ts:74",
+      "description": "ControlOrchestrator.logAudit() only calls console.log — no persistence.",
+      "impact": "All legacy admin action audit records are lost on process restart. No forensic trail.",
+      "root_cause": "Database insertion was left as a TODO comment during initial implementation.",
+      "recommended_fix": "Create control_audits Prisma model and call prisma.controlAudit.create() in logAudit()."
+    },
+    {
+      "issue_id": "SIMIS-009",
+      "severity": "medium",
+      "category": "schema",
+      "location": "apps/api/prisma/schema.prisma:LLMCallLog",
+      "description": "LLMCallLog.cost is typed as Float (IEEE 754 binary float).",
+      "impact": "Financial cost calculations using Float suffer from precision errors (e.g., 0.1 + 0.2 ≠ 0.3).",
+      "root_cause": "Float was used for simplicity; Decimal was not considered during initial schema design.",
+      "recommended_fix": "Change to: cost Decimal @db.Decimal(10,6) and regenerate Prisma client."
+    }
+  ],
+  "risk_heatmap": {
+    "data_integrity": {
+      "score": "HIGH_RISK",
+      "drivers": [
+        "SQLite/Postgres dual-DB split",
+        "audit log is console.log only",
+        "LLMCallLog uses Float for cost"
+      ]
+    },
+    "system_reliability": {
+      "score": "MEDIUM_RISK",
+      "drivers": [
+        "SSE memory leak in legacy admin",
+        "no circuit breaker on AI Router",
+        "BullMQ jobs never cleaned up"
+      ]
+    },
+    "scalability": {
+      "score": "MEDIUM_RISK",
+      "drivers": [
+        "semantic cache 100% miss rate",
+        "SQLite not horizontally scalable",
+        "no Redis hot-key sharding"
+      ]
+    },
+    "security": {
+      "score": "CRITICAL_RISK",
+      "drivers": [
+        "user_metadata RBAC bypass (privilege escalation)",
+        "no scope payload sanitization"
+      ]
+    },
+    "observability": {
+      "score": "MEDIUM_RISK",
+      "drivers": [
+        "traceId not propagated in MVP/SQLite path",
+        "SSE stream is mock data",
+        "DLQ endpoint is stub"
+      ]
+    }
+  }
+}

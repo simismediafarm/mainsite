@@ -1,0 +1,22 @@
+{
+  "name": "@simis/worker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx src/ai.worker.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.8.0",
+    "bullmq": "^4.12.0",
+    "ioredis": "^5.3.2",
+    "@simis/ai-router": "workspace:*",
+    "@simis/ai-cache": "workspace:*",
+    "@simis/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "tsx": "^4.0.0",
+    "@types/node": "^20.0.0"
+  }
+}

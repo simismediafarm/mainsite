@@ -270,7 +270,7 @@ export default function PostReaderClient({ initialPost, initialMonetization }: P
           <div className="space-y-3">
             <details className="group bg-[#121212] border border-[#222222] rounded-sm">
               <summary className="list-none p-4 flex justify-between items-center cursor-pointer text-xs text-[#e5e2e1] font-bold select-none">
-                What constitutes a "Sovereign Operator" workflow?
+                What constitutes a &quot;Sovereign Operator&quot; workflow?
                 <span className="material-symbols-outlined transition-transform group-open:rotate-180 text-xs">expand_more</span>
               </summary>
               <div className="p-4 pt-0 text-xs text-[#bac9cc] leading-relaxed font-sans">

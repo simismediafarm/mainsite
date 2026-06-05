@@ -5,16 +5,32 @@ import Nodemailer from "next-auth/providers/nodemailer";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: "file:../api/prisma/dev.db"
+if (!process.env.EMAIL_SERVER) {
+  process.env.EMAIL_SERVER = "smtp://localhost:25";
+}
+if (!process.env.EMAIL_FROM) {
+  process.env.EMAIL_FROM = "noreply@localhost";
+}
+
+let prismaInstance: PrismaClient | null = null;
+const prisma = new Proxy({} as PrismaClient, {
+  get(target, prop) {
+    if (!prismaInstance) {
+      if (!process.env.DATABASE_URL) {
+        process.env.DATABASE_URL = "postgresql://postgres:%40Zasper123.@db.mbdezvvnzonsazzaolxw.supabase.co:5432/postgres?schema=public";
+      }
+      prismaInstance = new PrismaClient();
     }
+    const value = Reflect.get(prismaInstance, prop);
+    if (typeof value === 'function') {
+      return value.bind(prismaInstance);
+    }
+    return value;
   }
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  adapter: PrismaAdapter(prisma as any),
   providers: [
     GitHub,
     Google,
