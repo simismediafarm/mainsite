@@ -19,9 +19,17 @@ const DEFAULT_HARDCODED_VALUES: KillSwitchConfig = {
 export class KillSwitch {
   private redis: Redis;
   private config: KillSwitchConfig;
+  private timeWindowSeconds: number;
 
-  constructor(redisUrl: string = process.env.REDIS_URL || 'redis://localhost:6379') {
-    this.redis = new Redis(redisUrl);
+  constructor(redisUrl: string = process.env.REDIS_URL || 'redis://localhost:6379', thresholdSeconds: number = 300) {
+    this.redis = new Redis(redisUrl, {
+      maxRetriesPerRequest: 3,
+      retryStrategy: (times) => {
+        if (times > 3) return null;
+        return Math.min(times * 100, 2000);
+      }
+    });
+    this.timeWindowSeconds = thresholdSeconds;
     
     // HYBRID_ENFORCEMENT Policy
     this.config = {

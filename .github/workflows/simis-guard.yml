@@ -55,6 +55,15 @@ jobs:
         run: pnpm build
 
       - name: Runtime Smoke Test
+        env:
+          SUPABASE_URL: "http://localhost"
+          SUPABASE_ANON_KEY: "fake"
+          DATABASE_URL: "postgresql://localhost/fake"
+          UPSTASH_REDIS_REST_URL: "http://localhost"
+          UPSTASH_REDIS_REST_TOKEN: "fake"
+          OPENAI_API_KEY: "fake"
+          REDIS_URL: "redis://localhost:6379"
+          PORT: "3000"
         run: |
           node apps/api/dist/index.js &
           sleep 5
