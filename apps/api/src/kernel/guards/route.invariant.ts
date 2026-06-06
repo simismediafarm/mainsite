@@ -18,10 +18,20 @@ export async function loadRouteRegistry(mountedRoutes: string[]) {
         target: 'system.auto_generated'
       }));
 
-      await prisma.routeRegistry.createMany({
-        data: seedData,
-        skipDuplicates: true
-      });
+      const prevBypass = process.env.SIK_BYPASS;
+      process.env.SIK_BYPASS = 'true';
+      try {
+        await prisma.routeRegistry.createMany({
+          data: seedData,
+          skipDuplicates: true
+        });
+      } finally {
+        if (prevBypass === undefined) {
+          delete process.env.SIK_BYPASS;
+        } else {
+          process.env.SIK_BYPASS = prevBypass;
+        }
+      }
 
       records = await prisma.routeRegistry.findMany();
     }
