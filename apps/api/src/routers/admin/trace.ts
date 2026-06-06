@@ -1,8 +1,19 @@
 import { Hono } from 'hono';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../prisma';
 
-const prisma = new PrismaClient();
 export const adminTraceRouter = new Hono();
+
+adminTraceRouter.get('/', async (c) => {
+  try {
+    const events = await prisma.eventQueueLog.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100
+    });
+    return c.json({ events });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
 
 adminTraceRouter.get('/:traceId', async (c) => {
   const traceId = c.req.param('traceId');

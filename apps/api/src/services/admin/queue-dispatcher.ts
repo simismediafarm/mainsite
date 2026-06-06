@@ -10,7 +10,7 @@ export const commandQueue = new Queue<SIMISCommand>(SIMIS_QUEUE_NAMES.COMMAND, {
 });
 
 // Create Authz Queue for RBAC evaluation
-export const authzQueue = new Queue<SIMISCommand>('simis-authz-queue', {
+export const authzQueue = new Queue<SIMISCommand>(SIMIS_QUEUE_NAMES.AUTHZ, {
   connection: {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379', 10),

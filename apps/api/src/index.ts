@@ -7,14 +7,33 @@ import { mvpRouter } from './routers/mvp';
 import { registryRouter } from './routers/registry';
 import { handle } from 'hono/vercel';
 import { adminRouter } from './routers/admin/index';
+import v2Router from './routers/v2';
 
-const app = new Hono();
+type Variables = {
+  traceId: string;
+};
+
+const app = new Hono<{ Variables: Variables }>();
+
+import { prisma } from './prisma';
+import crypto from 'crypto';
 
 // Global Middleware
-app.use('*', logger());
+app.use('*', async (c, next) => {
+  const traceId = c.req.header('x-trace-id') || crypto.randomUUID();
+  c.set('traceId', traceId);
+  c.res.headers.set('X-Trace-Id', traceId);
+  
+  const start = Date.now();
+  await next();
+  const ms = Date.now() - start;
+  
+  console.log(`[${c.req.method}] ${c.req.url} - ${c.res.status} - ${ms}ms [trace:${traceId}]`);
+});
+
 app.use('*', cors({
   origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3000',
-  allowHeaders: ['Content-Type', 'Authorization', 'X-SIMIS-OPS-KEY'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-SIMIS-OPS-KEY', 'X-Trace-Id'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
 }));
@@ -33,11 +52,18 @@ import kernelRouter from './routers/kernel';
 app.use('/api/admin/*', authMiddleware);
 app.use('/api/admin/*', adminAuthMiddleware);
 
+// Protect v2 Admin routes
+app.use('/api/v2/admin/*', authMiddleware);
+app.use('/api/v2/admin/*', adminAuthMiddleware);
+
 // Protect Kernel API
 app.use('/api/kernel/*', authMiddleware);
 
 // Mount Control Tower Admin API (v3.1) — Command, Metrics, Trace
 app.route('/api/admin', adminRouter);
+
+// Mount SIMIS V2.0 Programmatic Media Platform (v2Router)
+app.route('/api/v2', v2Router);
 
 // Mount Kernel API (v3.1)
 app.route('/api/kernel', kernelRouter);
@@ -45,8 +71,16 @@ app.route('/api/kernel', kernelRouter);
 // Mount Cron triggers
 app.route('/api/cron', cronRouter);
 
-// Health Check
-app.get('/health', (c) => c.json({ status: 'ok', service: 'simis-mediafarm-api' }));
+// Health Check with DB ping
+app.get('/health', async (c) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return c.json({ status: 'ok', service: 'simis-mediafarm-api', db: 'connected', timestamp: new Date().toISOString() });
+  } catch (error) {
+    console.error('[HealthCheck] DB Connection Failed:', error);
+    return c.json({ status: 'error', service: 'simis-mediafarm-api', db: 'disconnected' }, 503);
+  }
+});
 
 // Start Server / Export Handler
 const port = process.env.PORT ? parseInt(process.env.PORT) : 4000;

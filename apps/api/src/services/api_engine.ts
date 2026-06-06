@@ -1,4 +1,4 @@
-import { db } from '../store/mvp_db';
+import { prisma } from '../prisma';
 
 export class APIEngine {
   /**
@@ -17,15 +17,18 @@ export class APIEngine {
       return { success: false, reason: 'missing_content' };
     }
 
-    const candidate = await db.createContentCandidate({
-      sourceType: 'api',
-      sourceUrl: url,
-      title: title,
-      rawContent: content,
-      normalizedData: JSON.stringify({
-        provider,
-        trustScore: 60 // API has medium trust score
-      })
+    const candidate = await prisma.contentCandidate.create({
+      data: {
+        sourceType: 'api',
+        sourceUrl: url,
+        title: title,
+        rawContent: content,
+        normalizedData: JSON.stringify({
+          provider,
+          trustScore: 60 // API has medium trust score
+        }),
+        status: 'queued'
+      }
     });
 
     console.log(`[APIEngine] Queued API Candidate ID: ${candidate.id}`);

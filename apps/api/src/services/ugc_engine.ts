@@ -1,4 +1,4 @@
-import { db } from '../store/mvp_db';
+import { prisma } from '../prisma';
 
 export interface UGCSubmissionPayload {
   title: string;
@@ -24,16 +24,19 @@ export class UGCEngine {
       return { success: false, reason: 'invalid_payload' };
     }
 
-    const candidate = await db.createContentCandidate({
-      sourceType: 'editorial', // We classify UGC as editorial source tier
-      title,
-      rawContent: content,
-      extractedTags: payload.tags?.join(','),
-      normalizedData: JSON.stringify({
-        authorId: payload.authorId,
-        excerpt: payload.excerpt,
-        trustScore: 85 // Higher baseline for UGC
-      })
+    const candidate = await prisma.contentCandidate.create({
+      data: {
+        sourceType: 'editorial', // We classify UGC as editorial source tier
+        title,
+        rawContent: content,
+        extractedTags: payload.tags?.join(','),
+        normalizedData: JSON.stringify({
+          authorId: payload.authorId,
+          excerpt: payload.excerpt,
+          trustScore: 85 // Higher baseline for UGC
+        }),
+        status: 'queued'
+      }
     });
 
     console.log(`[UGCEngine] Successfully queued UGC Candidate ID: ${candidate.id}`);

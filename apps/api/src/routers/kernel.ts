@@ -1,11 +1,20 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
+import { z } from 'zod';
 import { getSupabase } from '@simis/kernel-graph/dist/executor/kernelExecutor';
 import { replayIntent } from '@simis/kernel-graph/dist/v7.1/runtime/replay';
 import { runExecutionPipeline, PipelineIntent } from '@simis/kernel-graph/dist/v7.1/runtime/execution_pipeline';
 import { registerSSEClient } from '../services/realtime';
 // @ts-ignore
 import { streamBridge } from '@simis/kernel-graph/dist/v7.1/runtime/kernel_stream_bridge.js';
+
+const KernelIntentInputSchema = z.object({
+  syscall_name: z.string().optional(),
+  payload: z.any().optional(),
+  idempotency_key: z.string().optional(),
+  priority: z.number().optional(),
+  epoch: z.string().optional(),
+});
 
 const kernelRouter = new Hono();
 
@@ -44,17 +53,21 @@ kernelRouter.get('/intents', async (c) => {
 // POST /kernel/intent -> Submit new intent via pipeline
 kernelRouter.post('/intent', async (c) => {
   try {
-    const body = await c.req.json();
+    const body = await c.req.json().catch(() => ({}));
+    const parseResult = KernelIntentInputSchema.safeParse(body);
+    if (!parseResult.success) {
+      return c.json({ error: 'Invalid intent payload schema', details: parseResult.error.format() }, 400);
+    }
+    const validatedData = parseResult.data;
     const intentId = crypto.randomUUID();
     
-    // Validate payload shape?
     const pipelineIntent: PipelineIntent = {
       intent_id: intentId,
-      syscall_name: body.syscall_name || 'custom.intent',
-      payload: body.payload || {},
-      idempotency_key: body.idempotency_key || intentId,
-      priority: body.priority || 2,
-      epoch: body.epoch || 'epoch-0'
+      syscall_name: validatedData.syscall_name || 'custom.intent',
+      payload: validatedData.payload || {},
+      idempotency_key: validatedData.idempotency_key || intentId,
+      priority: validatedData.priority || 2,
+      epoch: validatedData.epoch || 'epoch-0'
     };
 
     // Note: Usually intent gets written to registry first by syscall router, but for direct pipeline submission:
@@ -120,11 +133,25 @@ kernelRouter.get('/epochs', async (c) => {
 kernelRouter.get('/stream', (c) => {
   return streamSSE(c, async (stream) => {
     registerSSEClient(stream);
+    
+    const heartbeat = setInterval(async () => {
+      try {
+        await stream.writeSSE({ data: JSON.stringify({ type: 'ping' }) });
+      } catch {
+        clearInterval(heartbeat);
+      }
+    }, 25000);
+
     stream.onAbort(() => {
       console.log('Global SSE connection aborted');
+      clearInterval(heartbeat);
     });
+
     await stream.writeSSE({ data: JSON.stringify({ type: 'connected' }) });
-    await new Promise(() => {});
+    
+    await new Promise<void>((resolve) => {
+      stream.onAbort(() => resolve());
+    });
   });
 });
 
@@ -134,6 +161,14 @@ kernelRouter.get('/stream/:intentId', (c) => {
   return streamSSE(c, async (stream) => {
     console.log(`[SSE] Client connected to live stream for intent ${intentId}`);
     
+    const heartbeat = setInterval(async () => {
+      try {
+        await stream.writeSSE({ data: JSON.stringify({ type: 'ping' }) });
+      } catch {
+        clearInterval(heartbeat);
+      }
+    }, 25000);
+
     const unsubscribe = streamBridge.subscribeToIntent(intentId, (event: any) => {
       stream.writeSSE({
         event: 'execution.step',
@@ -141,18 +176,21 @@ kernelRouter.get('/stream/:intentId', (c) => {
       }).catch((err: any) => {
         console.error(`[SSE] Error writing to stream ${intentId}:`, err);
         unsubscribe();
+        clearInterval(heartbeat);
       });
     });
 
     stream.onAbort(() => {
       console.log(`[SSE] Client disconnected from live stream for intent ${intentId}`);
       unsubscribe();
+      clearInterval(heartbeat);
     });
 
     await stream.writeSSE({ data: JSON.stringify({ type: 'connected', intent_id: intentId }) });
     
-    // Keep connection alive
-    await new Promise(() => {});
+    await new Promise<void>((resolve) => {
+      stream.onAbort(() => resolve());
+    });
   });
 });
 

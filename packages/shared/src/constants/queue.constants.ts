@@ -8,4 +8,6 @@ export const SIMIS_QUEUE_NAMES = {
   COMMAND: 'simis-command-queue',
   /** Legacy AI enrichment queue (entity/attention/recommendation/demand) */
   AI_ENRICHMENT: 'simis-ai-queue',
+  /** Authorization queue */
+  AUTHZ: 'simis-authz-queue',
 } as const;

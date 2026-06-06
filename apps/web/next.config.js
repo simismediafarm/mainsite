@@ -10,7 +10,8 @@ const nextConfig = {
     return config;
   },
   async rewrites() {
-    const apiDest = process.env.NEXT_PUBLIC_KERNEL_API_URL || 'http://localhost:4000';
+    const apiDest = process.env.NEXT_PUBLIC_KERNEL_API_URL 
+      || (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:4000');
     return [
       {
         source: '/api/:path*',

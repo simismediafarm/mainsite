@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../prisma';
 import { SIMISCommand } from '@simis/shared';
-
-const prisma = new PrismaClient();
 
 /**
  * AI Advisory Engine (Read-Only)

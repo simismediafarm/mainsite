@@ -16,7 +16,7 @@ export async function generateMetadata(
 
   try {
     // Note: use 127.0.0.1 for local node fetch
-    const res = await fetch(`http://127.0.0.1:4000/api/mvp/content/${slug}`, { cache: 'no-store' });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_KERNEL_API_URL || 'http://127.0.0.1:4000'}/api/mvp/content/${slug}`, { cache: 'no-store' });
     if (!res.ok) return { title: 'Article Not Found' };
     
     const post = await res.json();
@@ -55,7 +55,7 @@ export default async function ArticlePage({ params }: Props) {
   let content = null;
 
   try {
-    const res = await fetch(`http://127.0.0.1:4000/api/mvp/content/${slug}`, { cache: 'no-store' });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_KERNEL_API_URL || 'http://127.0.0.1:4000'}/api/mvp/content/${slug}`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       if (!data.error) content = data;

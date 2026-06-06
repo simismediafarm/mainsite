@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../prisma';
 import { SIMIS_QUEUE_NAMES } from '@simis/shared';
-
-const prisma = new PrismaClient();
 
 /**
  * MetricsAggregatorService
@@ -10,16 +8,26 @@ const prisma = new PrismaClient();
  * - PostgreSQL EventQueueLog (queue depth per status)
  * - LLMCallLog (cost burn rate and fallback frequency)
  * - IntelligenceSnapshot (recent cache-hit effectiveness proxy)
+ *
+ * Implements a 5-second in-memory TTL cache to prevent connection pool exhaustion.
  */
 export class MetricsAggregatorService {
+  private cache: any = null;
+  private lastFetched = 0;
+
   async getSystemHealth() {
+    const now = Date.now();
+    if (this.cache && now - this.lastFetched < 5000) {
+      return this.cache;
+    }
+
     const [queueMetrics, llmMetrics, recentEvents] = await Promise.all([
       this.getQueueDepth(),
       this.getLLMMetrics(),
       this.getRecentEventActivity(),
     ]);
 
-    return {
+    this.cache = {
       system_health_status: queueMetrics.failed > 10 ? 'DEGRADED' : 'OPTIMAL',
       queue_depth: queueMetrics,
       llm_cost_burn_rate: llmMetrics.estimatedCostPerHour,
@@ -31,6 +39,9 @@ export class MetricsAggregatorService {
       },
       last_updated: new Date().toISOString(),
     };
+    this.lastFetched = now;
+
+    return this.cache;
   }
 
   private async getQueueDepth() {
@@ -50,7 +61,10 @@ export class MetricsAggregatorService {
       select: { cost: true, status: true },
     });
 
-    const totalCost = logs.reduce((sum, l) => sum + l.cost, 0);
+    const totalCost = logs.reduce((sum, l) => {
+      const costValue = typeof l.cost === 'number' ? l.cost : parseFloat(l.cost as any) || 0;
+      return sum + costValue;
+    }, 0);
     const fallbacks = logs.filter((l) => l.status === 'fallback').length;
 
     return {

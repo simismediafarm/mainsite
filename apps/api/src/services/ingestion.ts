@@ -1,5 +1,5 @@
 import { SourceType, CreatePostDTO } from '@simis/shared';
-import { db } from '../store/mvp_db';
+import { prisma } from '../prisma';
 import { createHash } from 'crypto';
 
 interface IngestionPayload {
@@ -38,13 +38,16 @@ export class IngestionEngine {
     }
 
     // 3. Push to ContentCandidate Queue
-    const candidate = await db.createContentCandidate({
-      sourceType: source,
-      sourceUrl: normalized.sourceUrl,
-      title: normalized.title,
-      rawContent: normalized.content,
-      extractedTags: normalized.tags?.join(','),
-      normalizedData: JSON.stringify({ authorId: normalized.authorId, excerpt: normalized.excerpt })
+    const candidate = await prisma.contentCandidate.create({
+      data: {
+        sourceType: source,
+        sourceUrl: normalized.sourceUrl,
+        title: normalized.title,
+        rawContent: normalized.content,
+        extractedTags: normalized.tags?.join(','),
+        normalizedData: JSON.stringify({ authorId: normalized.authorId, excerpt: normalized.excerpt }),
+        status: 'queued'
+      }
     });
 
     console.log(`[IngestionEngine] Successfully queued ContentCandidate ID: ${candidate.id}`);
@@ -71,7 +74,7 @@ export class IngestionEngine {
 
   private static async isDuplicate(hash: string): Promise<boolean> {
     // For MVP, we iterate posts. In prod, we use a hash index/set.
-    const allPosts = await db.getAllPosts();
+    const allPosts = await prisma.post.findMany();
     for (const p of allPosts) {
       const pHash = this.generateHash(p.title, p.content);
       if (pHash === hash) return true;

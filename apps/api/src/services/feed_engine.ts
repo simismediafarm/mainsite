@@ -1,5 +1,5 @@
 import { Post } from '@simis/shared';
-import { db } from '../store/mvp_db';
+import { prisma } from '../prisma';
 
 export class FeedEngine {
   /**
@@ -39,8 +39,22 @@ export class FeedEngine {
   }
 
   public static async getRankedFeed(tag?: string, authorId?: string, query?: string): Promise<any[]> {
-    // 1. Fetch raw posts from DB (filtering applied)
-    const rawPosts = await db.getAllPosts(tag, authorId, query);
+    let whereClause: any = {};
+    if (tag) {
+      whereClause.tags = { some: { name: tag } };
+    }
+    if (authorId) {
+      whereClause.authorId = authorId;
+    }
+    if (query) {
+      whereClause.title = { contains: query };
+    }
+
+    const rawPosts = await prisma.post.findMany({
+      where: whereClause,
+      include: { author: true, tags: true },
+      orderBy: { createdAt: 'desc' }
+    });
     
     // 2. Filter to only published/featured/monetized/ranked posts
     const activePosts = rawPosts.filter((p: any) => ['published', 'featured', 'ranked', 'monetized'].includes(p.status));

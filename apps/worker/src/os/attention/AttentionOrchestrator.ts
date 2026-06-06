@@ -4,7 +4,7 @@ import { AttentionEngine } from "./AttentionEngine";
 export class AttentionOrchestrator {
   private engine = new AttentionEngine();
 
-  async execute(payload: any, context: TraceContext) {
+  async execute(payload: any, context: TraceContext, signal?: AbortSignal) {
     console.log(`[AttentionOrchestrator] Executing for trace ${context.traceId}`);
     return { status: "success", module: "attention_os" };
   }

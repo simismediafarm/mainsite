@@ -1,5 +1,6 @@
 import { Post } from '@simis/shared';
-import { db } from '../store/mvp_db';
+import { prisma } from '../prisma';
+import { eventBus } from './event_bus';
 import { RevenueEngine } from './revenue_engine';
 import { GoogleAdManagerAdapter } from './monetization/GoogleAdManagerAdapter';
 import { AffiliateAdapter } from './monetization/AffiliateAdapter';
@@ -85,7 +86,7 @@ export class AdAuctionEngine {
    * Run auction for all allowed slots on a post, and update revenue
    */
   public static async executeAuctionsForPost(postId: string, allowedSlots: AdSlotType[]): Promise<AuctionResult[]> {
-    const post = await db.getPost(postId);
+    const post = await prisma.post.findUnique({ where: { id: postId } });
     if (!post) return [];
 
     const results: AuctionResult[] = [];
@@ -101,7 +102,7 @@ export class AdAuctionEngine {
     await RevenueEngine.recordImpression(postId, totalRevenueDelta);
 
     // Emit auction event
-    db.emitEvent({
+    eventBus.emitEvent({
       type: 'ad_auction_executed',
       payload: { id: postId, results, totalRevenueDelta }
     });

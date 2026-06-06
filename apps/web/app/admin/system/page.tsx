@@ -23,7 +23,7 @@ export default function SystemAdminPage() {
 
   useEffect(() => {
     // Fetch high-level pipeline metrics
-    fetch(`${API_BASE}/kernel/status`)
+    fetch(`${API_BASE}/api/kernel/status`)
       .then(res => res.json())
       .then(data => setStatus(data))
       .catch(console.error);

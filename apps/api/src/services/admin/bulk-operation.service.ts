@@ -1,9 +1,8 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { QueueDispatcherService } from './queue-dispatcher';
 import { SIMISCommand } from '@simis/shared';
-
-const prisma = new PrismaClient();
+import { prisma } from '../../prisma';
 
 export class BulkOperationService {
   static MAX_BATCH_SIZE = 1000;

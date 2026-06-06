@@ -76,7 +76,9 @@ app.post('/qstash/consume', async (c) => {
   }, {
     jobId: event.trace_id, // Prevent duplicate jobs if QStash retries
     removeOnComplete: 1000,
-    removeOnFail: 500
+    removeOnFail: 500,
+    attempts: 5,
+    backoff: { type: 'exponential', delay: 2000 }
   });
 
   return c.json({ success: true, status: 'enqueued', trace_id: event.trace_id });

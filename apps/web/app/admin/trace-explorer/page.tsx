@@ -7,7 +7,7 @@ export default function TraceExplorer() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/admin/command?query=events')
+    fetch('/api/admin/trace')
       .then(res => res.json())
       .then(data => {
         setEvents(data.events || []);

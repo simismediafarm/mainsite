@@ -19,7 +19,7 @@ export default async function TagPage({ params }: PageProps) {
 
   try {
     const [postsRes, taxonomyRes] = await Promise.allSettled([
-      fetch(`http://127.0.0.1:4000/api/mvp/tag/${tag}`, { cache: 'no-store' }),
+      fetch(`${process.env.NEXT_PUBLIC_KERNEL_API_URL || 'http://127.0.0.1:4000'}/api/mvp/tag/${tag}`, { cache: 'no-store' }),
       registry.getTaxonomy()
     ]);
 

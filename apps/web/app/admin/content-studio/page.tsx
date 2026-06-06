@@ -9,7 +9,7 @@ export default function ContentStudio() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    fetch('/api/kernel/db?query=posts')
+    fetch('/api/mvp/feed')
       .then(res => res.json())
       .then(data => {
         setPosts(data.posts || []);

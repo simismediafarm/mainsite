@@ -1,10 +1,11 @@
 import { Hono } from 'hono';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
 import { SIMISCommandInputSchema, SIMISCommand } from '@simis/shared';
 import { QueueDispatcherService } from '../../services/admin/queue-dispatcher';
+import { prisma } from '../../prisma';
 
-const prisma = new PrismaClient();
 export const adminCommandRouter = new Hono();
 
 adminCommandRouter.post('/', async (c) => {
@@ -75,10 +76,27 @@ adminCommandRouter.post('/', async (c) => {
   }
 });
 
+const EntityReprocessSchema = z.object({
+  entityId: z.string().optional(),
+});
+
+const CrawlerTriggerSchema = z.object({
+  sourceUrl: z.string().optional(),
+});
+
+const CacheInvalidateSchema = z.object({
+  key: z.string().optional(),
+});
+
 // 6. POST /entity/reprocess
 adminCommandRouter.post('/entity/reprocess', async (c) => {
   try {
     const rawBody = await c.req.json().catch(() => ({}));
+    const parseResult = EntityReprocessSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      return c.json({ error: 'Invalid payload schema', details: parseResult.error.format() }, 400);
+    }
+    const validatedBody = parseResult.data;
     const user = (c as any).get('user');
     const actor = user?.email || 'admin';
     const traceId = `trace_${uuidv4()}`;
@@ -88,9 +106,9 @@ adminCommandRouter.post('/entity/reprocess', async (c) => {
       data: {
         actor,
         action: 'ENTITY.REPROCESS',
-        target: rawBody.entityId || 'all',
+        target: validatedBody.entityId || 'all',
         status: 'SUCCESS',
-        payload: rawBody
+        payload: validatedBody as any
       }
     });
 
@@ -101,7 +119,7 @@ adminCommandRouter.post('/entity/reprocess', async (c) => {
         actor,
         source: 'dashboard',
         eventType: 'ENTITY.REPROCESS',
-        payload: rawBody,
+        payload: validatedBody as any,
         status: 'QUEUED'
       }
     });
@@ -116,6 +134,11 @@ adminCommandRouter.post('/entity/reprocess', async (c) => {
 adminCommandRouter.post('/crawler/trigger', async (c) => {
   try {
     const rawBody = await c.req.json().catch(() => ({}));
+    const parseResult = CrawlerTriggerSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      return c.json({ error: 'Invalid payload schema', details: parseResult.error.format() }, 400);
+    }
+    const validatedBody = parseResult.data;
     const user = (c as any).get('user');
     const actor = user?.email || 'admin';
     const traceId = `trace_${uuidv4()}`;
@@ -125,9 +148,9 @@ adminCommandRouter.post('/crawler/trigger', async (c) => {
       data: {
         actor,
         action: 'CRAWLER.TRIGGER',
-        target: rawBody.sourceUrl || 'all',
+        target: validatedBody.sourceUrl || 'all',
         status: 'SUCCESS',
-        payload: rawBody
+        payload: validatedBody as any
       }
     });
 
@@ -138,7 +161,7 @@ adminCommandRouter.post('/crawler/trigger', async (c) => {
         actor,
         source: 'dashboard',
         eventType: 'CRAWLER.TRIGGER',
-        payload: rawBody,
+        payload: validatedBody as any,
         status: 'QUEUED'
       }
     });
@@ -153,6 +176,11 @@ adminCommandRouter.post('/crawler/trigger', async (c) => {
 adminCommandRouter.post('/cache/invalidate', async (c) => {
   try {
     const rawBody = await c.req.json().catch(() => ({}));
+    const parseResult = CacheInvalidateSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      return c.json({ error: 'Invalid payload schema', details: parseResult.error.format() }, 400);
+    }
+    const validatedBody = parseResult.data;
     const user = (c as any).get('user');
     const actor = user?.email || 'admin';
     const traceId = `trace_${uuidv4()}`;
@@ -162,9 +190,9 @@ adminCommandRouter.post('/cache/invalidate', async (c) => {
       data: {
         actor,
         action: 'CACHE.INVALIDATE',
-        target: rawBody.key || 'all',
+        target: validatedBody.key || 'all',
         status: 'SUCCESS',
-        payload: rawBody
+        payload: validatedBody as any
       }
     });
 
@@ -175,7 +203,7 @@ adminCommandRouter.post('/cache/invalidate', async (c) => {
         actor,
         source: 'dashboard',
         eventType: 'CACHE.INVALIDATE',
-        payload: rawBody,
+        payload: validatedBody as any,
         status: 'QUEUED'
       }
     });

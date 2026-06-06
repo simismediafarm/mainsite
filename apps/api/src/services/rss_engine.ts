@@ -1,4 +1,4 @@
-import { db } from '../store/mvp_db';
+import { prisma } from '../prisma';
 import { createHash } from 'crypto';
 
 export class RSSEngine {
@@ -27,15 +27,18 @@ export class RSSEngine {
       // Check if this article exists in candidates to prevent duplicates
       // (Simplified logic for mock)
       
-      const candidate = await db.createContentCandidate({
-        sourceType: 'rss',
-        sourceUrl: article.link,
-        title: article.title,
-        rawContent: article.description,
-        normalizedData: JSON.stringify({
-          pubDate: article.pubDate,
-          trustScore: 40 // RSS has lower trust score baseline
-        })
+      const candidate = await prisma.contentCandidate.create({
+        data: {
+          sourceType: 'rss',
+          sourceUrl: article.link,
+          title: article.title,
+          rawContent: article.description,
+          normalizedData: JSON.stringify({
+            pubDate: article.pubDate,
+            trustScore: 40 // RSS has lower trust score baseline
+          }),
+          status: 'queued'
+        }
       });
 
       console.log(`[RSSEngine] Queued RSS Candidate ID: ${candidate.id}`);

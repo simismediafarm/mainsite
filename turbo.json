@@ -35,6 +35,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "inputs": ["src/**", "prisma/**", "package.json"],
       "outputs": [".next/**", "dist/**"]
     },
     "lint": {},

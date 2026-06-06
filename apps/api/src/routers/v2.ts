@@ -4,6 +4,7 @@
 
 import { Hono } from 'hono';
 import { getSupabase } from '@simis/kernel-graph/dist/executor/kernelExecutor';
+import { prisma } from '../prisma';
 import { runExecutionPipeline, PipelineIntent } from '@simis/kernel-graph/dist/v7.1/runtime/execution_pipeline';
 import { buildContentBlock, ContentBlockV2 } from '../services/block_builder';
 import { computeRankingScore, calculateFreshness } from '../services/ranking';
@@ -415,6 +416,150 @@ v2Router.post('/ingest', ingestRateLimit, async (c) => {
       error_message: err.message,
       retry_count: 0
     });
+    return c.json({ error: err.message }, 500);
+  }
+});
+
+// ── Admin Sub-routes for frontend v2 pages ───────────────────────────────────
+
+// GET /admin/ranking/weights
+v2Router.get('/admin/ranking/weights', async (c) => {
+  try {
+    const existing = await prisma.rankingProfile.findFirst({ where: { name: 'default' } });
+    if (existing && existing.weights) {
+      return c.json({ weights: existing.weights });
+    }
+    return c.json({
+      weights: {
+        freshness: 1.0,
+        authority: 1.0,
+        ctr: 1.0,
+        monetization: 1.0
+      }
+    });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
+// PUT /admin/ranking/weights
+v2Router.put('/admin/ranking/weights', async (c) => {
+  try {
+    const body = await c.req.json();
+    const existing = await prisma.rankingProfile.findFirst({ where: { name: 'default' } });
+    if (existing) {
+      await prisma.rankingProfile.update({
+        where: { id: existing.id },
+        data: { weights: body }
+      });
+    } else {
+      await prisma.rankingProfile.create({
+        data: {
+          name: 'default',
+          version: 1,
+          isActive: true,
+          weights: body
+        }
+      });
+    }
+    return c.json({ success: true });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
+// GET /admin/ingestion/sources
+v2Router.get('/admin/ingestion/sources', async (c) => {
+  try {
+    const [rss, api] = await Promise.all([
+      prisma.rssSource.findMany(),
+      prisma.apiSource.findMany()
+    ]);
+    const sources = [
+      ...rss.map(r => ({ id: r.id, name: r.name, type: 'rss', lastRun: r.lastFetched?.toISOString() || 'never', status: r.status })),
+      ...api.map(a => ({ id: a.id, name: a.provider, type: 'api', lastRun: 'never', status: a.status }))
+    ];
+    return c.json({ sources });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
+// GET /admin/dlq
+v2Router.get('/admin/dlq', async (c) => {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase.from('kernel_dead_letter_queue').select('*');
+    if (error) return c.json({ error: error.message }, 500);
+    const items = (data || []).map(d => ({
+      id: d.intent_id,
+      reason: d.error_message,
+      retries: d.retry_count
+    }));
+    return c.json({ items });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
+// POST /admin/dlq/retry
+v2Router.post('/admin/dlq/retry', async (c) => {
+  try {
+    const body = await c.req.json();
+    const supabase = getSupabase();
+    const { error } = await supabase.from('kernel_dead_letter_queue').delete().eq('intent_id', body.id);
+    if (error) return c.json({ error: error.message }, 500);
+    return c.json({ success: true, message: `Transaction ${body.id} successfully re-enqueued for ingestion.` });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
+// GET /admin/content/queue
+v2Router.get('/admin/content/queue', async (c) => {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase.from('content_blocks_v2').select('*').in('status', ['staged', 'pending_review']);
+    if (error) return c.json({ error: error.message }, 500);
+    const items = (data || []).map(d => ({
+      id: d.id,
+      title: d.title,
+      score: d.metadata?.seo_prediction?.cannibalization_risk ? 0.95 : 0.12
+    }));
+    return c.json({ items });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
+// POST /admin/content/approve
+v2Router.post('/admin/content/approve', async (c) => {
+  try {
+    const body = await c.req.json();
+    const supabase = getSupabase();
+    const { error } = await supabase.from('content_blocks_v2').update({ status: 'published' }).in('id', body.ids);
+    if (error) return c.json({ error: error.message }, 500);
+    return c.json({ success: true, message: `Approved ${body.ids.length} item(s).` });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
+// POST /admin/revenue/simulate
+v2Router.post('/admin/revenue/simulate', async (c) => {
+  try {
+    const body = await c.req.json();
+    const ctr = body.ctr || 0.02;
+    const dwell = body.dwell_time_seconds || 15;
+    const geo = body.geo || 'US';
+
+    // Basic simulation formula
+    const baseRate = geo === 'US' ? 5.0 : geo === 'UK' ? 4.0 : 1.5;
+    const dwellBonus = Math.min(dwell / 10, 3);
+    const expected_rpm = baseRate * (1 + ctr * 10) * (1 + dwellBonus);
+
+    return c.json({ expected_rpm });
+  } catch (err: any) {
     return c.json({ error: err.message }, 500);
   }
 });

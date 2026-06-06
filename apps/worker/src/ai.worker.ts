@@ -11,7 +11,7 @@ const connection = {
 };
 
 console.log('🚀 SIMIS D-IOS: Worker Intelligence Kernel Booting...');
-console.log(`   Listening on queues: [${SIMIS_QUEUE_NAMES.AI_ENRICHMENT}] [simis-authz-queue] [${SIMIS_QUEUE_NAMES.COMMAND}]`);
+console.log(`   Listening on queues: [${SIMIS_QUEUE_NAMES.AI_ENRICHMENT}] [${SIMIS_QUEUE_NAMES.AUTHZ}] [${SIMIS_QUEUE_NAMES.COMMAND}]`);
 
 // ── Worker 1: AI Enrichment (Legacy entity/attention/recommendation/demand) ──
 export const enrichmentWorker = new Worker(
@@ -54,7 +54,7 @@ commandWorker.on('failed', (job: Job | undefined, err: Error) => {
 
 // ── Worker 3: Zero Trust RBAC Decision Engine ─────────────────────────────────
 export const authzWorker = new Worker(
-  'simis-authz-queue',
+  SIMIS_QUEUE_NAMES.AUTHZ,
   processAuthzJob,
   {
     connection,
