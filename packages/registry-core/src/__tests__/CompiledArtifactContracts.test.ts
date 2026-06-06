@@ -91,6 +91,7 @@ describe("CompiledArtifactContracts - Compiler Identity & Provenance Block Schem
       compilerVersion: "1.0.0",
       compilerHash: "sha256:compiler_hash_abc",
       dependencyFingerprint: "fingerprint_123",
+      artifactSignature: "sig_abc123",
       sourceManifest: {
         themeVersionUid: "theme_ver_1",
         tokenVersionUids: ["token_ver_1"],
@@ -104,6 +105,13 @@ describe("CompiledArtifactContracts - Compiler Identity & Provenance Block Schem
   it("accepts valid schema with all required provenance and compiler identity", () => {
     const parsed = CompiledArtifactSchema.safeParse(validArtifact);
     expect(parsed.success).toBe(true);
+  });
+
+  it("fails if artifactSignature is missing from provenance", () => {
+    const invalid = JSON.parse(JSON.stringify(validArtifact));
+    delete invalid.provenance.artifactSignature;
+    const parsed = CompiledArtifactSchema.safeParse(invalid);
+    expect(parsed.success).toBe(false);
   });
 
   it("fails if compilerVersion is missing from provenance", () => {
