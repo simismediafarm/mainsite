@@ -41,7 +41,7 @@ export class SnapshotWriter {
           explanation: explanation,
           factorFingerprint,
           profileFingerprint
-        }
+        } as any
       }
     });
   }

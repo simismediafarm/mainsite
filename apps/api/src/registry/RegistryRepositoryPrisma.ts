@@ -260,12 +260,12 @@ export class RegistryRepositoryPrisma implements RegistryRepository {
     // We store it purely as an audit trail snapshot.
     await client.registryAuditLog.create({
       data: {
-        id: `cdn-receipt-${receipt.receiptId}`,
-        registryDefinitionUid: receipt.themeUid || "system",
+        uid: uuidv4(),
+        definitionUid: receipt.themeUid || "00000000-0000-0000-0000-000000000000",
         action: "CDN_PROPAGATION_RECEIPT",
-        actor: "system",
-        timestamp: new Date(),
-        details: receipt,
+        performedBy: "system",
+        performedAt: new Date(),
+        changes: receipt,
       }
     });
   }

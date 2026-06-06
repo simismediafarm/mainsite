@@ -162,6 +162,17 @@ export class SQLiteDB {
       include: { author: true, tags: true }
     });
 
+    await prisma.eventQueueLog.create({
+      data: {
+        traceId: `trace_mvp_${post.id}`,
+        actor: dto.authorId,
+        source: 'mvp_router',
+        eventType: 'CONTENT.DRAFT.CREATE',
+        payload: post as any,
+        status: 'COMPLETED'
+      }
+    });
+
     this.broadcast({ type: 'post_created', payload: post as any });
     return post;
   }
@@ -189,6 +200,18 @@ export class SQLiteDB {
       where: { id },
       data: { status: newState }
     });
+
+    await prisma.eventQueueLog.create({
+      data: {
+        traceId: `trace_mvp_${id}`,
+        actor: 'system',
+        source: 'mvp_router',
+        eventType: 'CONTENT.UPDATE',
+        payload: { id, status: newState },
+        status: 'COMPLETED'
+      }
+    });
+
     this.broadcast({ type: 'state_transition', payload: { id, status: newState } });
     return post;
   }
@@ -196,6 +219,18 @@ export class SQLiteDB {
   async deletePost(id: string) {
     try {
       await prisma.post.delete({ where: { id } });
+
+      await prisma.eventQueueLog.create({
+        data: {
+          traceId: `trace_mvp_${id}`,
+          actor: 'system',
+          source: 'mvp_router',
+          eventType: 'CONTENT.DELETE',
+          payload: { id },
+          status: 'COMPLETED'
+        }
+      });
+
       this.broadcast({ type: 'post_deleted', payload: { id } });
       return true;
     } catch {

@@ -1,4 +1,7 @@
 import Redis from 'ioredis';
+import { PrismaClient } from '@simis/database';
+
+const prisma = new PrismaClient();
 
 // Basic cache structure for semantic caching + immutable snapshots
 export class AICache {
@@ -33,21 +36,36 @@ export class AICache {
     );
   }
 
-  /**
-   * Check if a semantic embedding is similar enough to skip an LLM call.
-   * Note: Vector similarity search is typically done in Postgres with pgvector, 
-   * but exact string/hash matches can be quickly checked in Redis.
-   *
-   * @param embedding The generated vector for the input
-   * @param similarityThreshold Default 0.85 as per architecture config
-   */
   async checkSemanticCache(embedding: number[], similarityThreshold: number = 0.85): Promise<any | null> {
-    // TODO: Connect to Postgres pgvector using Prisma for cosine similarity search
-    // SELECT * FROM "IntelligenceSnapshot" 
-    // ORDER BY embedding <=> $1 LIMIT 1
-    // IF similarity > similarityThreshold THEN return output ELSE return null
-
-    // For now, this is a placeholder returning null to force execution if no exact hash was found
-    return null;
+    try {
+      // Prisma $queryRaw parameterization for vector is tricky.
+      // We format the array to a string representation '[1,2,3]'
+      const embeddingString = `[${embedding.join(',')}]`;
+      
+      const result = await prisma.$queryRaw`
+        SELECT "inputHash", confidence,
+               1 - (embedding <=> ${embeddingString}::vector) AS similarity
+        FROM "analytics"."IntelligenceSnapshot"
+        WHERE 1 - (embedding <=> ${embeddingString}::vector) > ${similarityThreshold}
+        ORDER BY similarity DESC
+        LIMIT 1
+      `;
+      if (Array.isArray(result) && result.length > 0) {
+        const closestMatch = result[0];
+        // Now fetch the actual output payload from Redis using the inputHash
+        const payload = await this.getSnapshot(closestMatch.inputHash);
+        if (payload) {
+          return {
+            ...payload,
+            semantic_similarity: closestMatch.similarity,
+            semantic_confidence: closestMatch.confidence
+          };
+        }
+      }
+      return null;
+    } catch (err) {
+      console.warn('[AICache] checkSemanticCache failed:', err);
+      return null;
+    }
   }
 }

@@ -1,5 +1,5 @@
 import { SourceType, CreatePostDTO } from '@simis/shared';
-import { db } from '../store/sqlite_db';
+import { db } from '../store/mvp_db';
 import { createHash } from 'crypto';
 
 interface IngestionPayload {

@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
-import { db } from '../store/sqlite_db';
+import { db } from '../store/mvp_db';
 import { CreatePostDTO, SourceType } from '@simis/shared';
 import { FeedEngine } from '../services/feed_engine';
 import { MonetizationEngine } from '../services/monetization_engine';

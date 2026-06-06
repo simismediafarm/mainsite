@@ -24,8 +24,13 @@ app.route('/api/mvp', mvpRouter);
 // Mount SIMIS V2.2 Registries
 app.route('/api/v1/registry', registryRouter);
 
+import { cronRouter } from './routers/cron';
+
 // Mount Control Tower Admin API (v3.1) — Command, Metrics, Trace
 app.route('/api/admin', adminRouter);
+
+// Mount Cron triggers
+app.route('/api/cron', cronRouter);
 
 // Health Check
 app.get('/health', (c) => c.json({ status: 'ok', service: 'simis-mediafarm-api' }));

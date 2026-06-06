@@ -10,10 +10,11 @@ const nextConfig = {
     return config;
   },
   async rewrites() {
+    const apiDest = process.env.NEXT_PUBLIC_KERNEL_API_URL || 'http://localhost:4000';
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:4000/api/:path*',
+        destination: `${apiDest}/api/:path*`,
       },
     ];
   },

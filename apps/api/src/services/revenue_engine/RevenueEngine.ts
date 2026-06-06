@@ -103,7 +103,7 @@ export class RevenueEngine {
           status: 'completed',
           completedAt: new Date(),
           executionMs: Date.now() - startTimeMs,
-          output: { result, traceId }
+          output: { result, traceId } as any
         }
       });
 

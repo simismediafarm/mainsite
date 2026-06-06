@@ -12,12 +12,19 @@ describe("DistributedArtifact Integrity & Immutability", () => {
       componentMappings: {},
       provenance: {
         compiledFromBundleHash: "b-hash",
-        compiledAt: new Date(),
+        compiledAt: new Date().toISOString(),
         compiledBy: "test-actor",
         compilerVersion: "1.0",
         compilerHash: "c-hash",
         dependencyFingerprint: "d-fingerprint",
         artifactSignature: "", // will compute below
+        sourceManifest: {
+          themeVersionUid: "",
+          tokenVersionUids: [],
+          motionVersionUids: [],
+          iconVersionUids: [],
+          componentStyleVersionUids: []
+        }
       }
     };
 

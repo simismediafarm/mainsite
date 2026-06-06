@@ -1,4 +1,4 @@
-import { db } from '../store/sqlite_db';
+import { db } from '../store/mvp_db';
 import { CreatePostDTO } from '@simis/shared';
 
 export class CurationEngine {

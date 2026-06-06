@@ -873,6 +873,45 @@ model LLMCallLog {
   @@schema("analytics")
 }
 
+// ----------------------------------------------------------------------------
+// PHASE 5: AI GOVERNANCE & COST LEDGER
+// ----------------------------------------------------------------------------
+model AICostLedger {
+  id               String   @id @default(uuid())
+  traceId          String
+  userId           String?
+  featureId        String?
+  provider         String
+  model            String
+  tokensIn         Int      @default(0)
+  tokensOut        Int      @default(0)
+  latencyMs        Int      @default(0)
+  providerCostUsd  Decimal  @db.Decimal(10, 6) @default(0.0)
+  cacheHit         Boolean  @default(false)
+  timestamp        DateTime @default(now())
+
+  @@index([traceId])
+  @@index([userId])
+  @@index([featureId])
+  @@index([provider])
+  @@index([timestamp])
+  @@schema("analytics")
+}
+
+model AIExecutionReplay {
+  id                String   @id @default(uuid())
+  traceId           String   @unique
+  requestInput      Json
+  providerSelection String
+  fallbackChain     Json
+  finalOutput       Json
+  deterministicMode Boolean  @default(true)
+  seededExecution   Boolean  @default(false)
+  timestamp         DateTime @default(now())
+
+  @@schema("analytics")
+}
+
 model EventQueueLog {
   id        String   @id @default(uuid())
   traceId   String?

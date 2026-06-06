@@ -66,5 +66,6 @@ export interface SSEEvent<T = any> {
 }
 
 export * from './schemas/command.schema';
+export * from './schemas/event.schema';
 export * from './constants/queue.constants';
 

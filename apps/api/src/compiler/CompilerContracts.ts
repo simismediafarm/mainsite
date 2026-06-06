@@ -18,23 +18,25 @@ export interface CompilerInput {
   compiledFromBundleHash?: string;
 }
 
+export interface CompiledThemeArtifact {
+  subtype: "compiled-artifact";
+  artifactSchemaVersion: number;
+  cssVariables: Record<string, string>;
+  componentMappings: Record<string, any>;
+  provenance: {
+    compiledFromBundleHash: string;
+    compiledAt: string;
+    compiledBy: string;
+    compilerVersion: string;
+    compilerHash: string;
+    dependencyFingerprint: string;
+    artifactSignature: string;
+    sourceManifest: CompilerSourceManifest;
+  };
+}
+
 export interface CompilerOutput {
   definition: RegistryDefinition;
   version: RegistryVersion;
-  artifactPayload: {
-    subtype: "compiled-artifact";
-    artifactSchemaVersion: number;
-    cssVariables: Record<string, string>;
-    componentMappings: Record<string, any>;
-    provenance: {
-      compiledFromBundleHash: string;
-      compiledAt: string;
-      compiledBy: string;
-      compilerVersion: string;
-      compilerHash: string;
-      dependencyFingerprint: string;
-      artifactSignature: string;
-      sourceManifest: CompilerSourceManifest;
-    };
-  };
+  artifactPayload: CompiledThemeArtifact;
 }

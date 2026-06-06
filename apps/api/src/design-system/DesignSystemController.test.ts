@@ -119,8 +119,6 @@ class FakeRegistryRepository implements RegistryRepository {
     return {} as any;
   }
 
-  async listDefinitions() { return []; }
-
   async saveCDNPropagationReceipt() {}
 
   async update(uid: string, newDefinition: Record<string, any>): Promise<RegistryVersion> {
@@ -202,7 +200,7 @@ describe("DesignSystemController & ApplicationService Integration Tests", () => 
       permissionService
     );
     appService = new DesignSystemApplicationService(registryService, repo);
-    controller = new DesignSystemController(appService);
+    controller = new DesignSystemController(appService, {} as any);
 
     app = new Hono();
     const router = createDesignSystemRoutes(controller);
@@ -456,7 +454,7 @@ describe("DesignSystemController & ApplicationService Integration Tests", () => 
       ),
       repo
     );
-    const restrictedController = new DesignSystemController(restrictedService);
+    const restrictedController = new DesignSystemController(restrictedService, {} as any);
     const restrictedApp = new Hono();
     restrictedApp.route("/api/v1/design-system", createDesignSystemRoutes(restrictedController));
 

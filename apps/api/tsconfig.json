@@ -11,8 +11,6 @@
     "forceConsistentCasingInFileNames": true
   },
   "include": [
-    "src/index.ts",
-    "src/routers/mvp.ts",
-    "src/store/memory_db.ts"
+    "src/**/*.ts"
   ]
 }

@@ -1,5 +1,5 @@
 import { Post } from '@simis/shared';
-import { db } from '../store/sqlite_db';
+import { db } from '../store/mvp_db';
 
 export class RevenueEngine {
   /**

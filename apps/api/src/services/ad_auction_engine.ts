@@ -1,5 +1,5 @@
 import { Post } from '@simis/shared';
-import { db } from '../store/sqlite_db';
+import { db } from '../store/mvp_db';
 import { RevenueEngine } from './revenue_engine';
 import { GoogleAdManagerAdapter } from './monetization/GoogleAdManagerAdapter';
 import { AffiliateAdapter } from './monetization/AffiliateAdapter';

@@ -7,16 +7,19 @@
     "build": "tsc"
   },
   "dependencies": {
+    "@hono/node-server": "^1.10.0",
     "@prisma/client": "^7.8.0",
-    "bullmq": "^4.12.0",
-    "ioredis": "^5.3.2",
-    "@simis/ai-router": "workspace:*",
     "@simis/ai-cache": "workspace:*",
-    "@simis/shared": "workspace:*"
+    "@simis/ai-router": "workspace:*",
+    "@simis/shared": "workspace:*",
+    "@upstash/qstash": "^2.11.0",
+    "bullmq": "^4.12.0",
+    "hono": "^4.2.0",
+    "ioredis": "^5.3.2"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
     "tsx": "^4.0.0",
-    "@types/node": "^20.0.0"
+    "typescript": "^5.0.0"
   }
 }
