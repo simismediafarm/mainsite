@@ -1,0 +1,50 @@
+name: SIMIS Execution Guard
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: pnpm install
+
+      - name: Prisma Instantiation Guard
+        run: |
+          if grep -r "new PrismaClient" . --exclude-dir=node_modules --exclude-dir=.git | grep -v "@simis/database/src/index.ts"; then
+            echo "❌ Direct PrismaClient usage detected outside of database package"
+            exit 1
+          fi
+
+      - name: Database Layer Enforcement
+        run: |
+          if grep -r "@prisma/client" packages/* | grep -v "@simis/database" | grep -v "node_modules"; then
+            echo "❌ Unauthorized Prisma import detected"
+            exit 1
+          fi
+
+      - name: API Contract Drift Check
+        run: |
+          diff apps/api/src/routers/mvp.ts apps/api/src/routers/v2.ts || true
+
+      - name: Contract Runtime Validation
+        run: pnpm --filter @simis/contracts test
+
+      - name: Build Check
+        run: pnpm build
+
+      - name: Runtime Smoke Test
+        run: |
+          node apps/api/dist/index.js &
+          sleep 5
+          curl http://localhost:3000/health || exit 1

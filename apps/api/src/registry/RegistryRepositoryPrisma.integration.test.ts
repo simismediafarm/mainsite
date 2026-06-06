@@ -9,7 +9,8 @@ describe.skip('RegistryRepositoryPrisma Integration Tests', () => {
   let repo: RegistryRepositoryPrisma;
 
   beforeAll(async () => {
-    prisma = new PrismaClient();
+    const { prisma: dbPrisma } = require('@simis/database');
+    prisma = dbPrisma;
     repo = new RegistryRepositoryPrisma(prisma);
     // Clear tables before tests if needed
   });

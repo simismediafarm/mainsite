@@ -1,7 +1,7 @@
 {
   "functions": {
-    "dist/index.js": {
-      "includeFiles": "node_modules/.prisma/client/**,node_modules/@prisma/client-runtime-utils/**,node_modules/@prisma/client/**"
+    "apps/api/src/index.ts": {
+      "includeFiles": "node_modules/.prisma/**"
     }
   }
 }

@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
-import '@prisma/client-runtime-utils'; // Force Vercel NFT to bundle this Prisma dependency
+import * as prismaRuntimeUtils from '@prisma/client-runtime-utils'; // Force Vercel NFT to bundle this Prisma dependency
+console.log('[Prisma Runtime Load]', !!prismaRuntimeUtils); // Prevent tree-shaking
+
 import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';

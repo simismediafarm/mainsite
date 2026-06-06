@@ -1296,3 +1296,21 @@ model GlobalRankingWeights {
 
   @@schema("registry")
 }
+
+// ----------------------------------------------------------------------------
+// PHASE 5: AUTONOMOUS PROGRESSIVE DELIVERY
+// ----------------------------------------------------------------------------
+
+model MigrationState {
+  id               String   @id @default(uuid())
+  endpoint         String   @unique
+  v1TrafficRatio   Float    @default(1.0)
+  v2TrafficRatio   Float    @default(0.0)
+  stabilityScoreV2 Float    @default(0.0)
+  confidence       Float    @default(0.0)
+  status           String   @default("locked_v1") // locked_v1, gradual_migration, v2_primary, completed
+  lastShiftAt      DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@schema("registry")
+}

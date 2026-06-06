@@ -3,8 +3,16 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  transpilePackages: ['@simis/shared', '@prisma/client'],
+  transpilePackages: ['@simis/shared'],
+  serverExternalPackages: ['@prisma/client', '@prisma/client-runtime-utils'],
   outputFileTracingRoot: path.join(__dirname, '../../'),
+  outputFileTracingIncludes: {
+    '/**/*': [
+      'node_modules/.prisma/client/**/*',
+      'node_modules/@prisma/client-runtime-utils/**/*',
+      'node_modules/@prisma/client/**/*'
+    ]
+  },
   webpack: (config) => {
     config.resolve.alias['.prisma/client'] = path.resolve(__dirname, '../../node_modules/.prisma/client');
     return config;

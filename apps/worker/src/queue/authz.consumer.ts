@@ -1,8 +1,6 @@
 import { Job, Queue } from 'bullmq';
 import { SIMISCommand, SIMIS_QUEUE_NAMES } from '@simis/shared';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@simis/database';
 
 const commandQueue = new Queue<SIMISCommand>(SIMIS_QUEUE_NAMES.COMMAND, {
   connection: {

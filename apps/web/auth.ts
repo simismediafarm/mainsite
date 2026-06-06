@@ -19,7 +19,8 @@ const prisma = new Proxy({} as PrismaClient, {
       if (!process.env.DATABASE_URL) {
         process.env.DATABASE_URL = "postgresql://postgres:%40Zasper123.@db.mbdezvvnzonsazzaolxw.supabase.co:5432/postgres?schema=public";
       }
-      prismaInstance = new PrismaClient();
+      const { prisma } = require('@simis/database');
+      prismaInstance = prisma;
     }
     const value = Reflect.get(prismaInstance, prop);
     if (typeof value === 'function') {

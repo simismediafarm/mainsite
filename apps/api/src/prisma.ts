@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma as rawPrisma } from '@simis/database';
 import { extendPrismaWithEventInvariant } from './kernel/guards/event.invariant';
 
 const globalForPrisma = globalThis as unknown as { prisma: any };
-
-const rawPrisma = globalForPrisma.prisma ?? new PrismaClient();
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = rawPrisma;
 

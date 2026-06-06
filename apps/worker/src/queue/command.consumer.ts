@@ -1,8 +1,6 @@
 import { Job } from 'bullmq';
 import { SIMISCommand } from '@simis/shared';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@simis/database';
 
 /**
  * Command Kernel Worker Processor

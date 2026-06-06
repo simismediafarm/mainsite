@@ -1,7 +1,5 @@
 import Redis from 'ioredis';
-import { PrismaClient } from '@simis/database';
-
-const prisma = new PrismaClient();
+import { prisma } from '@simis/database';
 
 // Basic cache structure for semantic caching + immutable snapshots
 export class AICache {

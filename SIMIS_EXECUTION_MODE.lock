@@ -1,0 +1,143 @@
+{
+  "system": "SIMIS",
+  "version": "v2.4-core",
+  "mode": "STABILITY_LOCKED_AUTONOMOUS",
+
+  "execution_guard": {
+    "enabled": true,
+    "strict_mode": true,
+    "allow_runtime_mutation": false,
+    "require_contract_validation": true,
+    "require_telemetry_signoff": true
+  },
+
+  "core_architecture": {
+    "database_layer": {
+      "single_source": "@simis/database",
+      "orm": "prisma",
+      "rule": "NO_DIRECT_PRISMA_INSTANTIATION_OUTSIDE_DATABASE_PACKAGE",
+      "enforced_pattern": "singleton_prisma_pg_adapter"
+    },
+
+    "gateway_layer": {
+      "mode": "ADAPTIVE_TRAFFIC_INTELLIGENCE_LAYER",
+      "routing_strategy": "score_based_decision_engine",
+      "fallback_policy": "non_primary_mechanism",
+      "features": [
+        "traffic_scoring",
+        "blended_routing",
+        "endpoint_awareness",
+        "user_cohort_routing"
+      ]
+    },
+
+    "migration_layer": {
+      "engine": "SIMS_AUTONOMOUS_MIGRATION_ENGINE",
+      "type": "continuous_progressive_delivery",
+      "state_model": "endpoint_migration_state_machine",
+      "controls": {
+        "max_shift_rate": 0.1,
+        "rollback_threshold": 0.55,
+        "promotion_threshold": 0.85,
+        "concurrent_migrations_limit": 3
+      },
+      "states": [
+        "locked_v1",
+        "gradual_migration",
+        "v2_primary",
+        "completed"
+      ]
+    },
+
+    "contract_layer": {
+      "location": "packages/contracts",
+      "enforcement": "runtime_and_ci",
+      "validation_modes": [
+        "strict",
+        "observed",
+        "off_emergency_only"
+      ],
+      "rule": "NO_UNVALIDATED_V2_PAYLOAD_IN_PRODUCTION_FLOW"
+    },
+
+    "ci_cd_guard": {
+      "name": "SIMIS_EXECUTION_GUARD",
+      "blocks": [
+        "new PrismaClient outside database package",
+        "contract mismatch v1/v2",
+        "serverless cold start failure",
+        "unvalidated API shape drift"
+      ],
+      "required_checks": [
+        "pnpm build",
+        "contract_test_suite",
+        "serverless_emulation_gate"
+      ]
+    }
+  },
+
+  "runtime_intelligence": {
+    "telemetry": {
+      "enabled": true,
+      "signals": [
+        "latency",
+        "error_rate",
+        "schema_violation",
+        "user_engagement",
+        "endpoint_health"
+      ]
+    },
+
+    "decision_system": {
+      "type": "multi_score_routing_engine",
+      "formula": "weighted_score_comparison_v1_v2",
+      "output_modes": [
+        "v1",
+        "v2",
+        "blended"
+      ]
+    },
+
+    "autonomy_rules": {
+      "can_change_traffic_distribution": true,
+      "can_promote_v2_without_manual_flag": true,
+      "can_rollback_on_degradation": true,
+      "cannot_bypass_contract_validation": true
+    }
+  },
+
+  "safety_constraints": {
+    "hard_limits": {
+      "max_traffic_shift_per_cycle": 0.1,
+      "max_parallel_endpoint_migrations": 3,
+      "rollback_required_on_error_spike": true
+    },
+
+    "emergency_controls": {
+      "global_freeze_switch": true,
+      "auto_freeze_on_system_risk": 0.9
+    }
+  },
+
+  "observability": {
+    "required_metrics": [
+      "v1_vs_v2_latency_delta",
+      "migration_confidence_score",
+      "fallback_frequency",
+      "endpoint_stability_index"
+    ],
+    "dashboards": [
+      "migration_heatmap",
+      "gateway_decision_trace",
+      "contract_violation_log"
+    ]
+  },
+
+  "principles": [
+    "NO_SILENT_FALLBACK",
+    "NO_UNOBSERVED_MIGRATION",
+    "NO_DIRECT_DATABASE_ACCESS_OUTSIDE_CONTROL_PLANE",
+    "ALL_ROUTING_IS_SCORE_DRIVEN",
+    "ALL_V2_DEPLOYMENT_IS_EARNED_NOT_ASSUMED"
+  ]
+}
