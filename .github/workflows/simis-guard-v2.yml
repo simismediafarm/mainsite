@@ -16,14 +16,19 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: |
-          corepack enable
           pnpm install --frozen-lockfile
 
       # -------------------------------
@@ -32,8 +37,10 @@ jobs:
       - name: Block unsafe Prisma instantiation
         run: |
           echo "Scanning for illegal PrismaClient usage..."
-          if grep -R "new PrismaClient" apps packages --exclude-dir=node_modules; then
+          ILLEGAL_USAGE=$(grep -R "new PrismaClient" apps packages --exclude-dir=node_modules --exclude-dir=coverage | grep -v "packages/database" || true)
+          if [ -n "$ILLEGAL_USAGE" ]; then
             echo "❌ ERROR: Direct PrismaClient instantiation detected outside @simis/database"
+            echo "$ILLEGAL_USAGE"
             exit 1
           fi
 
