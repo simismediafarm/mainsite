@@ -61,11 +61,11 @@ export class MetricsAggregatorService {
       select: { cost: true, status: true },
     });
 
-    const totalCost = logs.reduce((sum, l) => {
+    const totalCost = logs.reduce((sum: number, l: any) => {
       const costValue = typeof l.cost === 'number' ? l.cost : parseFloat(l.cost as any) || 0;
       return sum + costValue;
     }, 0);
-    const fallbacks = logs.filter((l) => l.status === 'fallback').length;
+    const fallbacks = logs.filter((l: any) => l.status === 'fallback').length;
 
     return {
       estimatedCostPerHour: Math.round(totalCost * 100) / 100,

@@ -1,3 +1,11 @@
+import { bootstrapWorkerKernel } from './kernel/bootstrap';
+
+// SIK: Bootstrap Worker Invariant Kernel
+bootstrapWorkerKernel().catch(err => {
+  console.error('CRITICAL: Worker SIK Bootstrap failed:', err);
+  process.exit(1);
+});
+
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { Receiver } from '@upstash/qstash';

@@ -8,6 +8,8 @@ import { registryRouter } from './routers/registry';
 import { handle } from 'hono/vercel';
 import { adminRouter } from './routers/admin/index';
 import v2Router from './routers/v2';
+import { honoSikMiddleware } from './kernel/guards/event.invariant';
+import { honoRouteInvariantMiddleware } from './kernel/guards/route.invariant';
 
 type Variables = {
   traceId: string;
@@ -17,6 +19,10 @@ const app = new Hono<{ Variables: Variables }>();
 
 import { prisma } from './prisma';
 import crypto from 'crypto';
+
+// SIK: Enforce Event Trace Context and Route Invariants on all requests
+app.use('*', honoSikMiddleware);
+app.use('*', honoRouteInvariantMiddleware);
 
 // Global Middleware
 app.use('*', async (c, next) => {
@@ -84,6 +90,16 @@ app.get('/health', async (c) => {
 
 // Start Server / Export Handler
 const port = process.env.PORT ? parseInt(process.env.PORT) : 4000;
+
+import { bootstrapKernel } from './kernel/bootstrap';
+
+// SIK: Bootstrap System Invariant Kernel
+const mountedPaths = app.routes.map(r => r.path);
+bootstrapKernel({ mountedRoutes: mountedPaths }).catch((err) => {
+  console.error('CRITICAL: SIK Bootstrap failed:', err);
+  process.exit(1);
+});
+
 if (!process.env.VERCEL) {
   console.log(`[API] Starting Hono SIMIS MediaFarm API on port ${port}...`);
   serve({

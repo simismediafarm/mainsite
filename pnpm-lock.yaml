@@ -56,6 +56,9 @@ importers:
       '@prisma/client-runtime-utils':
         specifier: ^7.8.0
         version: 7.8.0
+      '@simis/ai-cache':
+        specifier: workspace:*
+        version: link:../../packages/ai-cache
       '@simis/database':
         specifier: workspace:^
         version: link:../../packages/database

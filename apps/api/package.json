@@ -14,6 +14,7 @@
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@prisma/client-runtime-utils": "^7.8.0",
+    "@simis/ai-cache": "workspace:*",
     "@simis/database": "workspace:^",
     "@simis/kernel-graph": "workspace:*",
     "@simis/reasoning-graph": "workspace:*",

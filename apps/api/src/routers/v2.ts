@@ -476,8 +476,8 @@ v2Router.get('/admin/ingestion/sources', async (c) => {
       prisma.apiSource.findMany()
     ]);
     const sources = [
-      ...rss.map(r => ({ id: r.id, name: r.name, type: 'rss', lastRun: r.lastFetched?.toISOString() || 'never', status: r.status })),
-      ...api.map(a => ({ id: a.id, name: a.provider, type: 'api', lastRun: 'never', status: a.status }))
+      ...rss.map((r: any) => ({ id: r.id, name: r.name, type: 'rss', lastRun: r.lastFetched?.toISOString() || 'never', status: r.status })),
+      ...api.map((a: any) => ({ id: a.id, name: a.provider, type: 'api', lastRun: 'never', status: a.status }))
     ];
     return c.json({ sources });
   } catch (err: any) {

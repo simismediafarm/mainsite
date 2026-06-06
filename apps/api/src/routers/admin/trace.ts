@@ -28,8 +28,7 @@ adminTraceRouter.get('/:traceId', async (c) => {
     return c.json({ error: 'Trace not found' }, 404);
   }
 
-  // Scaffold DAG reconstruction
-  const dagNodes = events.map((e, index) => ({
+  const dagNodes = events.map((e: any, index: number) => ({
     id: `node_${e.id}`,
     type: e.eventType,
     status: e.status,
