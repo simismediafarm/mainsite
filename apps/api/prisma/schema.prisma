@@ -8,6 +8,7 @@ generator client_api {
   provider        = "prisma-client-js"
   output          = "../node_modules/.prisma/client"
   previewFeatures = ["multiSchema", "postgresqlExtensions"]
+  binaryTargets   = ["native", "rhel-openssl-3.0.x"]
 }
 
 generator client_web {
