@@ -21,7 +21,9 @@ export const SIMISCommandTypeSchema = z.enum([
   "CONTENT.PUBLISH",
   "CONTENT.SCHEDULE",
   "DISTRIBUTION.TRIGGER",
-  "AFFILIATE.LINK.ADD"
+  "AFFILIATE.LINK.ADD",
+  "CONTENT.BULK.REPROCESS",
+  "CONTENT.BULK.PUBLISH"
 ]);
 
 export type SIMISCommandType = z.infer<typeof SIMISCommandTypeSchema>;

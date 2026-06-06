@@ -21,9 +21,6 @@ export const metadata = {
     title: 'SIMIS MediaFarm',
     description: 'An Autonomous Content Distribution and Monetization Network.',
   },
-  icons: {
-    icon: '/favicon.ico',
-  },
 };
 
 const themeScript = `

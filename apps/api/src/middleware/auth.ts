@@ -35,11 +35,16 @@ export async function authMiddleware(c: Context, next: Next) {
     return await next();
   }
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return c.json({ error: 'Unauthorized: missing or malformed Authorization header' }, 401);
+  let token = '';
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.slice(7);
+  } else {
+    token = c.req.query('token') || '';
   }
 
-  const token = authHeader.slice(7);
+  if (!token) {
+    return c.json({ error: 'Unauthorized: missing token in Authorization header or query parameter' }, 401);
+  }
 
   // Use the anon Supabase client to validate the user token
   const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!);
@@ -55,3 +60,32 @@ export async function authMiddleware(c: Context, next: Next) {
 
   await next();
 }
+
+/**
+ * Hono middleware that ensures the authenticated user has 'admin' privilege.
+ * Must be executed AFTER authMiddleware.
+ */
+export async function adminAuthMiddleware(c: Context, next: Next) {
+  const opsKey = c.req.header('X-SIMIS-OPS-KEY');
+
+  if (opsKey && process.env.SIMIS_OPS_KEY && opsKey === process.env.SIMIS_OPS_KEY) {
+    // CLI or Bot with valid ops key bypasses admin role check
+    return await next();
+  }
+
+  const user = c.get('user');
+
+  if (!user) {
+    return c.json({ error: 'Unauthorized: user session not found' }, 401);
+  }
+
+  // Enforce server-verified app_metadata.role (prevents client-side user_metadata escalation)
+  const role = user.app_metadata?.role;
+  const allowedRoles = ['super_admin', 'system_admin', 'admin'];
+  if (!allowedRoles.includes(role)) {
+    return c.json({ error: 'Forbidden: elevated privileges required' }, 403);
+  }
+
+  await next();
+}
+

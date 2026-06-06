@@ -19,25 +19,20 @@ export default function AdminSidebar() {
   }, []);
 
   const navItems: NavItem[] = [
-    { label: "Executive Overview", href: "/admin", icon: "dashboard" },
-    { label: "Portfolio Intelligence", href: "/admin/network", icon: "hub" },
-    { label: "Content Operations", href: "/admin/content", icon: "inventory_2" },
-    { label: "Knowledge Graph", href: "/admin/entities", icon: "account_tree" },
-    { label: "Author Factory", href: "/admin/authors", icon: "group" },
-    { label: "Expert Network", href: "/admin/experts", icon: "verified" },
-    { label: "Source Intelligence", href: "/admin/sources", icon: "rss_feed" },
-    { label: "SEO Command", href: "/admin/seo", icon: "search" },
-    { label: "Revenue Ops", href: "/admin/revenue", icon: "payments" },
-    { label: "Opportunity Discovery", href: "/admin/opportunities", icon: "explore" },
-    { label: "M&A Workspace", href: "/admin/acquisition", icon: "business" },
-    { label: "BI Warehouse", href: "/admin/warehouse", icon: "database" },
+    { label: "Overview Control Tower", href: "/admin/overview", icon: "dashboard" },
+    { label: "Content Studio", href: "/admin/content-studio", icon: "inventory_2" },
+    { label: "Dataset Manager", href: "/admin/dataset-manager", icon: "dataset" },
+    { label: "Integration Hub", href: "/admin/integrations", icon: "hub" },
+    { label: "AI Orchestration", href: "/admin/ai-orchestration", icon: "psychology" },
+    { label: "User Access", href: "/admin/user-access", icon: "shield_person" },
+    { label: "Trace Explorer", href: "/admin/trace-explorer", icon: "account_tree" },
   ];
 
   return (
     <aside className="fixed h-screen w-[280px] left-0 top-0 border-r border-[#222222] bg-[#121212] flex flex-col z-50 text-[#e5e2e1]">
       <div className="px-6 py-6 border-b border-[#222222] flex flex-col gap-1 bg-[#0e0e0e]">
-        <h1 className="text-xl font-bold tracking-tight text-[#e5e2e1] font-sans">Sovereign OS</h1>
-        <span className="font-mono text-[10px] tracking-wider text-[#bac9cc] uppercase">Operator v2.2.0</span>
+        <h1 className="text-xl font-bold tracking-tight text-[#e5e2e1] font-sans">MediaFarm OS</h1>
+        <span className="font-mono text-[10px] tracking-wider text-[#bac9cc] uppercase">Operator v4.1.0</span>
       </div>
       
       <div className="px-4 py-4">

@@ -25,9 +25,21 @@ app.route('/api/mvp', mvpRouter);
 app.route('/api/v1/registry', registryRouter);
 
 import { cronRouter } from './routers/cron';
+import { authMiddleware, adminAuthMiddleware } from './middleware/auth';
+import kernelRouter from './routers/kernel';
+
+// Protect Control Tower Admin API with Supabase Auth + RBAC Admin verification
+app.use('/api/admin/*', authMiddleware);
+app.use('/api/admin/*', adminAuthMiddleware);
+
+// Protect Kernel API
+app.use('/api/kernel/*', authMiddleware);
 
 // Mount Control Tower Admin API (v3.1) — Command, Metrics, Trace
 app.route('/api/admin', adminRouter);
+
+// Mount Kernel API (v3.1)
+app.route('/api/kernel', kernelRouter);
 
 // Mount Cron triggers
 app.route('/api/cron', cronRouter);

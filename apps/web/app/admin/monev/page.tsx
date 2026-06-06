@@ -9,16 +9,44 @@ export default function ObservabilityMonitorView() {
   const [logs, setLogs] = useState<any[]>([]);
 
   useEffect(() => {
-    const sse = new EventSource(`${API_BASE}/api/v2/admin/telemetry/stream`);
-    
-    sse.addEventListener('log', (e) => {
-      try {
-        const payload = JSON.parse(e.data);
-        setLogs(prev => [payload, ...prev].slice(0, 15));
-      } catch (err) {}
-    });
+    let sse: EventSource | null = null;
 
-    return () => sse.close();
+    async function initSSE() {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+        
+        const { createBrowserClient } = await import('@supabase/ssr');
+        const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        const token = session?.access_token || '';
+        sse = new EventSource(`${API_BASE}/api/kernel/stream?token=${token}`);
+        
+        sse.onmessage = (e) => {
+          try {
+            const payload = JSON.parse(e.data);
+            if (payload.type === 'connected') return;
+            setLogs(prev => [payload, ...prev].slice(0, 15));
+          } catch (err) {}
+        };
+        
+        sse.addEventListener('log', (e: any) => {
+          try {
+            const payload = JSON.parse(e.data);
+            setLogs(prev => [payload, ...prev].slice(0, 15));
+          } catch (err) {}
+        });
+      } catch (err) {
+        console.error('Failed to initialize SSE telemetry stream', err);
+      }
+    }
+
+    initSSE();
+
+    return () => {
+      if (sse) sse.close();
+    };
   }, []);
 
   return (
