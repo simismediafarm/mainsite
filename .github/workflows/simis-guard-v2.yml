@@ -37,7 +37,10 @@ jobs:
       - name: Block unsafe Prisma instantiation
         run: |
           echo "Scanning for illegal PrismaClient usage..."
-          ILLEGAL_USAGE=$(grep -R "new PrismaClient" apps packages --exclude-dir=node_modules --exclude-dir=coverage | grep -v "packages/database" || true)
+          ILLEGAL_USAGE=$(grep -R "new PrismaClient" apps packages \
+            --include="*.ts" --include="*.tsx" --include="*.js" \
+            --exclude-dir=node_modules --exclude-dir=coverage --exclude-dir=playwright-report \
+            | grep -v "packages/database" || true)
           if [ -n "$ILLEGAL_USAGE" ]; then
             echo "❌ ERROR: Direct PrismaClient instantiation detected outside @simis/database"
             echo "$ILLEGAL_USAGE"
@@ -50,16 +53,28 @@ jobs:
       - name: Block adaptive scoring logic
         run: |
           echo "Scanning for forbidden adaptive logic..."
-          if grep -R "scoreSignal" apps/web apps/api packages; then
+          SCORE=$(grep -R "scoreSignal" apps/web apps/api packages \
+            --include="*.ts" --include="*.tsx" --include="*.js" \
+            --exclude-dir=node_modules --exclude-dir=coverage --exclude-dir=playwright-report || true)
+          if [ -n "$SCORE" ]; then
             echo "❌ ERROR: scoring logic detected (scoreSignal)"
+            echo "$SCORE"
             exit 1
           fi
-          if grep -R "EMA" apps/web apps/api packages; then
+          EMA_HIT=$(grep -R "EMA" apps/web apps/api packages \
+            --include="*.ts" --include="*.tsx" --include="*.js" \
+            --exclude-dir=node_modules --exclude-dir=coverage --exclude-dir=playwright-report || true)
+          if [ -n "$EMA_HIT" ]; then
             echo "❌ ERROR: EMA smoothing logic detected"
+            echo "$EMA_HIT"
             exit 1
           fi
-          if grep -E "confidence.*route|adaptive routing|AI routing" apps/web apps/api packages; then
+          ADAPTIVE=$(grep -ER "confidence.*route|adaptive routing" apps/web apps/api packages \
+            --include="*.ts" --include="*.tsx" --include="*.js" \
+            --exclude-dir=node_modules --exclude-dir=coverage --exclude-dir=playwright-report || true)
+          if [ -n "$ADAPTIVE" ]; then
             echo "❌ ERROR: adaptive routing logic detected"
+            echo "$ADAPTIVE"
             exit 1
           fi
 

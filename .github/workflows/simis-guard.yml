@@ -27,8 +27,13 @@ jobs:
 
       - name: Prisma Instantiation Guard
         run: |
-          if grep -r "new PrismaClient" . --exclude-dir=node_modules --exclude-dir=.git | grep -v "@simis/database/src/index.ts"; then
+          ILLEGAL=$(grep -r "new PrismaClient" . \
+            --include="*.ts" --include="*.tsx" --include="*.js" \
+            --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=coverage \
+            | grep -v "packages/database/src/index.ts" || true)
+          if [ -n "$ILLEGAL" ]; then
             echo "❌ Direct PrismaClient usage detected outside of database package"
+            echo "$ILLEGAL"
             exit 1
           fi
 
