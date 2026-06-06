@@ -7,7 +7,7 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { mvpRouter } from './routers/mvp';
 import { registryRouter } from './routers/registry';
-import { handle } from 'hono/vercel';
+import { handle } from '@hono/node-server/vercel';
 import { adminRouter } from './routers/admin/index';
 import v2Router from './routers/v2';
 import { honoSikMiddleware } from './kernel/guards/event.invariant';

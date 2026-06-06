@@ -2,7 +2,17 @@ import { Redis } from "ioredis";
 import { getSupabase } from "@simis/kernel-graph/dist/executor/kernelExecutor";
 import { BanditState, BanditAction } from "./types";
 
-const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
+const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
+  maxRetriesPerRequest: 3,
+  retryStrategy(times) {
+    if (times > 3) return null;
+    return Math.min(times * 100, 2000);
+  }
+});
+
+redis.on("error", (err) => {
+  console.warn("[Redis Hybrid State] Connection warning (safe to ignore in non-Redis environments):", err.message);
+});
 
 export class HybridBanditState {
   static getKey(contextKey: string, actionType: string): string {
