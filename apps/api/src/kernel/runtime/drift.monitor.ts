@@ -26,9 +26,8 @@ export function enableDriftMonitor() {
       runDriftChecks(isProduction);
     } catch (e: any) {
       console.error('CRITICAL: SIK Drift Monitor caught violation:', e.message);
-      // Fail fast
       if (isProduction) {
-        process.exit(1);
+        throw e;
       }
     }
   }, 10 * 60 * 1000);

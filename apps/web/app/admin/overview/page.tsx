@@ -36,10 +36,22 @@ interface TraceResponse {
   raw_logs: any[];
 }
 
+interface V2Asset {
+  id: string;
+  title: string;
+  slug: string;
+  status: string;
+  type: string;
+}
+
 export default function AdminControlTowerHome() {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [loadingMetrics, setLoadingMetrics] = useState(true);
   const [errorMetrics, setErrorMetrics] = useState<string | null>(null);
+
+  // V2 Shadow State
+  const [v2Assets, setV2Assets] = useState<V2Asset[]>([]);
+  const [loadingV2, setLoadingV2] = useState(true);
 
   // Execution Mode State
   const [isDryRun, setIsDryRun] = useState(true);
@@ -55,9 +67,9 @@ export default function AdminControlTowerHome() {
   const [actionFeedback, setActionFeedback] = useState<{ message: string; isError: boolean } | null>(null);
   const [actionPending, setActionPending] = useState<string | null>(null);
 
-  // Fetch metrics on mount & poll every 5s
+  // Fetch metrics & V2 Shadow Data
   useEffect(() => {
-    async function loadMetrics() {
+    async function loadDashboardData() {
       try {
         const data = await fetchKernelApi('/api/admin/metrics');
         setMetrics(data);
@@ -67,16 +79,26 @@ export default function AdminControlTowerHome() {
       } finally {
         setLoadingMetrics(false);
       }
+
+      // Parallel Fetch V2 Data (Shadow Mode)
+      try {
+        const v2Data = await fetchKernelApi('/api/v2/registry/assets?limit=5');
+        if (v2Data && v2Data.items) {
+          setV2Assets(v2Data.items);
+        }
+      } catch (err) {
+        console.warn("V2 Shadow Fetch Failed", err);
+      } finally {
+        setLoadingV2(false);
+      }
     }
 
-    loadMetrics();
-    const interval = setInterval(loadMetrics, 5000);
+    loadDashboardData();
+    const interval = setInterval(loadDashboardData, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch initial execution mode
   useEffect(() => {
-    // Mode is resolved dynamically from configurations or env on load
     setIsDryRun(process.env.NEXT_PUBLIC_DEFAULT_EXECUTION_MODE !== 'execute');
   }, []);
 
@@ -138,220 +160,252 @@ export default function AdminControlTowerHome() {
   };
 
   return (
-    <div className="p-8 space-y-8 bg-gray-50 min-h-screen">
-      <header className="mb-8 border-b pb-4 flex flex-col md:flex-row justify-between items-start md:items-center">
+    <div className="space-y-8 bg-[#050505] text-[#e5e2e1] min-h-screen font-sans">
+      <header className="mb-8 border-b border-[#222] pb-6 flex flex-col md:flex-row justify-between items-start md:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">SIMIS D-IOS Control Tower v3.1</h1>
-          <p className="text-gray-500 mt-2">Unified Event-Driven System Operations & Traceability Plane</p>
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+            SIMIS D-IOS Control Tower v3.2
+          </h1>
+          <p className="text-[#849396] mt-2 text-sm tracking-wide uppercase">Unified Event-Driven System Operations & Traceability Plane</p>
         </div>
         {metrics && (
-          <div className="mt-4 md:mt-0 flex items-center space-x-2">
-            <span className="text-xs text-gray-400">Health Status:</span>
-            <span className={`px-2 py-1 text-xs font-bold rounded ${metrics.system_health_status === 'OPTIMAL' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+          <div className="mt-4 md:mt-0 flex items-center space-x-3 bg-[#111] px-4 py-2 rounded-full border border-[#222]">
+            <span className="text-xs text-[#849396] uppercase font-semibold">Health Status</span>
+            <span className={`px-3 py-1 text-xs font-bold rounded-full ${metrics.system_health_status === 'OPTIMAL' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'}`}>
               {metrics.system_health_status}
             </span>
           </div>
         )}
       </header>
 
-      {/* Action Notification Feedback */}
       {actionFeedback && (
-        <div className={`p-4 rounded-lg shadow-sm border ${actionFeedback.isError ? 'bg-red-50 border-red-200 text-red-800' : 'bg-green-50 border-green-200 text-green-800'}`}>
+        <div className={`p-4 rounded-xl border backdrop-blur-sm ${actionFeedback.isError ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>
           <p className="text-sm font-medium">{actionFeedback.message}</p>
         </div>
       )}
 
       {/* MODULE 1: System Overview */}
       <section>
-        <h2 className="text-xl font-bold text-gray-700 mb-4 flex items-center">
-          <span className="bg-blue-500 w-2 h-6 mr-3 rounded"></span>
+        <h2 className="text-lg font-bold text-white mb-4 flex items-center">
+          <span className="bg-blue-500 w-1.5 h-5 mr-3 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
           System Overview (Real-time Metrics)
         </h2>
         {errorMetrics && (
-          <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm mb-4">
+          <div className="p-4 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-sm mb-4">
             {errorMetrics}
           </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="p-6 bg-white shadow rounded-lg border-t-4 border-green-500">
-            <h3 className="text-sm font-semibold text-gray-600">Event Throughput (5m)</h3>
-            <p className="text-2xl font-bold text-gray-900 mt-2">
-              {loadingMetrics ? '...' : metrics?.recent_event_throughput} events
-            </p>
-            <p className="text-xs text-green-600 mt-1">Live from EventQueueLog</p>
-          </div>
-          <div className="p-6 bg-white shadow rounded-lg border-t-4 border-blue-500">
-            <h3 className="text-sm font-semibold text-gray-600">Queue Depth (Active/Failed)</h3>
-            <p className="text-2xl font-bold text-gray-900 mt-2">
-              {loadingMetrics ? '...' : `${metrics?.queue_depth.queued} Queued / ${metrics?.queue_depth.failed} Failed`}
-            </p>
-            <p className="text-xs text-gray-400 mt-1">Supabase DB Engine State</p>
-          </div>
-          <div className="p-6 bg-white shadow rounded-lg border-t-4 border-orange-500">
-            <h3 className="text-sm font-semibold text-gray-600">LLM Burn Rate (1hr)</h3>
-            <p className="text-2xl font-bold text-gray-900 mt-2">
-              {loadingMetrics ? '...' : `$${metrics?.llm_cost_burn_rate}`}
-            </p>
-            <p className="text-xs text-gray-400 mt-1">Estimated actual hourly cost</p>
-          </div>
-          <div className="p-6 bg-white shadow rounded-lg border-t-4 border-purple-500">
-            <h3 className="text-sm font-semibold text-gray-600">LLM Fallback Rate</h3>
-            <p className="text-2xl font-bold text-gray-900 mt-2">
-              {loadingMetrics ? '...' : `${((metrics?.fallback_frequency || 0) * 100).toFixed(1)}%`}
-            </p>
-            <p className="text-xs text-gray-400 mt-1">Multi-provider routing failure rate</p>
-          </div>
+          {[
+            { label: 'Event Throughput (5m)', value: `${metrics?.recent_event_throughput || 0} events`, sub: 'Live from EventQueueLog', color: 'border-emerald-500' },
+            { label: 'Queue Depth', value: `${metrics?.queue_depth?.queued || 0} / ${metrics?.queue_depth?.failed || 0}`, sub: 'Active / Failed', color: 'border-blue-500' },
+            { label: 'LLM Burn Rate (1hr)', value: `$${metrics?.llm_cost_burn_rate || 0}`, sub: 'Estimated actual hourly cost', color: 'border-orange-500' },
+            { label: 'LLM Fallback Rate', value: `${((metrics?.fallback_frequency || 0) * 100).toFixed(1)}%`, sub: 'Multi-provider routing failure', color: 'border-purple-500' }
+          ].map((stat, idx) => (
+            <div key={idx} className={`p-6 bg-[#0a0a0a] rounded-2xl border border-[#222] border-t-2 ${stat.color} hover:bg-[#111] transition-all`}>
+              <h3 className="text-xs font-semibold text-[#849396] uppercase tracking-wider">{stat.label}</h3>
+              <p className="text-3xl font-light text-white mt-3">
+                {loadingMetrics ? '...' : stat.value}
+              </p>
+              <p className="text-xs text-[#555] mt-2">{stat.sub}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* MODULE 1.5: V2 Intelligence Assets (Shadow Mode) */}
+      <section>
+        <h2 className="text-lg font-bold text-white mb-4 flex items-center">
+          <span className="bg-purple-500 w-1.5 h-5 mr-3 rounded-full shadow-[0_0_10px_rgba(168,85,247,0.5)]"></span>
+          V2 Asset Registry (Shadow Mode)
+        </h2>
+        <div className="bg-[#0a0a0a] border border-[#222] rounded-2xl p-6">
+          {loadingV2 ? (
+            <p className="text-sm text-[#849396]">Syncing V2 Registry...</p>
+          ) : v2Assets.length === 0 ? (
+            <p className="text-sm text-[#849396]">No assets discovered in V2 endpoints.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-[#222] text-[#849396]">
+                    <th className="pb-3 font-medium">Asset ID</th>
+                    <th className="pb-3 font-medium">Title</th>
+                    <th className="pb-3 font-medium">Type</th>
+                    <th className="pb-3 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#1a1a1a]">
+                  {v2Assets.map((asset) => (
+                    <tr key={asset.id} className="hover:bg-[#111] transition-colors">
+                      <td className="py-3 font-mono text-xs text-[#555]">{asset.id.split('-')[0]}</td>
+                      <td className="py-3 text-white truncate max-w-[200px]">{asset.title}</td>
+                      <td className="py-3 text-[#bac9cc] capitalize">{asset.type}</td>
+                      <td className="py-3">
+                        <span className={`px-2 py-1 text-[10px] uppercase font-bold rounded-full ${
+                          asset.status === 'published' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-yellow-500/20 text-yellow-400'
+                        }`}>
+                          {asset.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </section>
 
       {/* MODULE 2: Operations Control Center */}
       <section>
-        <h2 className="text-xl font-bold text-gray-700 mb-4 flex items-center">
-          <span className="bg-red-500 w-2 h-6 mr-3 rounded"></span>
+        <h2 className="text-lg font-bold text-white mb-4 flex items-center">
+          <span className="bg-red-500 w-1.5 h-5 mr-3 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.5)]"></span>
           Operations Control Center
         </h2>
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4 pb-4 border-b">
+        <div className="bg-[#0a0a0a] border border-[#222] rounded-2xl p-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 pb-6 border-b border-[#222]">
             <div>
-              <h3 className="font-semibold text-gray-800">Global Execution Mode</h3>
-              <p className="text-sm text-gray-500">Toggle between Dry-Run simulation and Live Execution</p>
+              <h3 className="font-semibold text-white">Global Execution Mode</h3>
+              <p className="text-sm text-[#849396] mt-1">Toggle between Dry-Run simulation and Live V2 Execution</p>
             </div>
-            <div className="flex items-center space-x-3">
-              <span className={`text-sm font-medium ${isDryRun ? 'text-blue-600 font-bold' : 'text-gray-400'}`}>Dry-Run</span>
+            <div className="flex items-center space-x-4 mt-4 md:mt-0 bg-[#111] p-2 rounded-xl border border-[#222]">
+              <span className={`text-xs uppercase font-bold ${isDryRun ? 'text-blue-400' : 'text-[#555]'}`}>Dry-Run</span>
               <button 
                 onClick={handleModeToggle}
                 disabled={mutatingMode}
-                className={`${isDryRun ? 'bg-gray-200' : 'bg-red-600'} w-12 h-6 rounded-full relative transition-colors duration-200 focus:outline-none disabled:opacity-50`}
-                role="switch"
-                aria-checked={!isDryRun}
-                aria-label="Toggle execution mode"
+                className={`${isDryRun ? 'bg-[#222]' : 'bg-red-500'} w-14 h-7 rounded-full relative transition-colors duration-300 focus:outline-none disabled:opacity-50 border border-[#333]`}
               >
-                <span className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 transform ${isDryRun ? 'translate-x-0' : 'translate-x-6'}`}></span>
+                <span className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform duration-300 transform shadow-sm ${isDryRun ? 'translate-x-0' : 'translate-x-7'}`}></span>
               </button>
-              <span className={`text-sm font-medium ${!isDryRun ? 'text-red-600 font-bold' : 'text-gray-400'}`}>Execute</span>
+              <span className={`text-xs uppercase font-bold ${!isDryRun ? 'text-red-400' : 'text-[#555]'}`}>Execute</span>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <button 
               onClick={() => triggerAction('ENTITY.REPROCESS', '/api/admin/command/entity/reprocess')}
               disabled={actionPending !== null}
-              className="px-4 py-3 bg-gray-50 border border-gray-200 rounded text-sm font-medium text-gray-700 hover:bg-gray-100 flex justify-between items-center disabled:opacity-50"
+              className="px-5 py-4 bg-[#111] border border-[#222] rounded-xl text-sm font-medium text-white hover:bg-[#1a1a1a] hover:border-[#333] flex justify-between items-center transition-all"
             >
               <span>{actionPending === 'ENTITY.REPROCESS' ? 'Processing...' : 'Force Reprocess Entity'}</span>
-              <span className="text-xs bg-gray-200 px-2 py-1 rounded text-gray-600">ENTITY.REPROCESS</span>
+              <span className="text-[10px] bg-[#222] px-2 py-1 rounded text-[#849396] font-mono">ENTITY.REPROCESS</span>
             </button>
             <button 
               onClick={() => triggerAction('CRAWLER.TRIGGER', '/api/admin/command/crawler/trigger')}
               disabled={actionPending !== null}
-              className="px-4 py-3 bg-gray-50 border border-gray-200 rounded text-sm font-medium text-gray-700 hover:bg-gray-100 flex justify-between items-center disabled:opacity-50"
+              className="px-5 py-4 bg-[#111] border border-[#222] rounded-xl text-sm font-medium text-white hover:bg-[#1a1a1a] hover:border-[#333] flex justify-between items-center transition-all"
             >
               <span>{actionPending === 'CRAWLER.TRIGGER' ? 'Triggering...' : 'Trigger Crawler'}</span>
-              <span className="text-xs bg-gray-200 px-2 py-1 rounded text-gray-600">CRAWLER.TRIGGER</span>
+              <span className="text-[10px] bg-[#222] px-2 py-1 rounded text-[#849396] font-mono">CRAWLER.TRIGGER</span>
             </button>
             <button 
               onClick={() => triggerAction('CACHE.INVALIDATE', '/api/admin/command/cache/invalidate', { key: 'all' })}
               disabled={actionPending !== null}
-              className="px-4 py-3 bg-red-50 border border-red-200 rounded text-sm font-medium text-red-700 hover:bg-red-100 flex justify-between items-center disabled:opacity-50"
+              className="px-5 py-4 bg-red-500/10 border border-red-500/30 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/20 flex justify-between items-center transition-all"
             >
               <span>{actionPending === 'CACHE.INVALIDATE' ? 'Invalidating...' : 'Invalidate Cache'}</span>
-              <span className="text-xs bg-red-100 px-2 py-1 rounded text-red-600">CACHE.INVALIDATE</span>
+              <span className="text-[10px] bg-red-500/20 px-2 py-1 rounded text-red-300 font-mono">CACHE.INVALIDATE</span>
             </button>
           </div>
         </div>
       </section>
 
       {/* MODULE 3: Trace Explorer DAG */}
-      <div className="grid grid-cols-1 gap-8">
-        <section>
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-700 flex items-center">
-              <span className="bg-indigo-500 w-2 h-6 mr-3 rounded"></span>
-              Trace Explorer DAG
-            </h2>
-            <form onSubmit={handleTraceSearch} className="mt-2 md:mt-0 flex space-x-2 w-full md:w-auto">
-              <input 
-                type="text" 
-                placeholder="Enter trace ID (e.g., trace_...)"
-                value={searchTraceId}
-                onChange={(e) => setSearchTraceId(e.target.value)}
-                className="px-3 py-1 text-sm border rounded bg-white w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-              <button 
-                type="submit"
-                disabled={loadingTrace || !searchTraceId.trim()}
-                className="px-4 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
-              >
-                {loadingTrace ? 'Searching...' : 'Explore'}
-              </button>
-            </form>
-          </div>
+      <section>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+          <h2 className="text-lg font-bold text-white flex items-center">
+            <span className="bg-emerald-500 w-1.5 h-5 mr-3 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span>
+            Trace Explorer DAG
+          </h2>
+          <form onSubmit={handleTraceSearch} className="mt-4 md:mt-0 flex space-x-3 w-full md:w-auto">
+            <input 
+              type="text" 
+              placeholder="Enter trace ID (e.g., trace_...)"
+              value={searchTraceId}
+              onChange={(e) => setSearchTraceId(e.target.value)}
+              className="px-4 py-2 text-sm border border-[#333] rounded-xl bg-[#111] text-white w-full md:w-72 focus:outline-none focus:border-emerald-500 transition-colors"
+            />
+            <button 
+              type="submit"
+              disabled={loadingTrace || !searchTraceId.trim()}
+              className="px-6 py-2 text-sm bg-emerald-500/20 text-emerald-400 font-bold rounded-xl hover:bg-emerald-500/30 border border-emerald-500/50 disabled:opacity-50 transition-colors"
+            >
+              {loadingTrace ? 'Searching...' : 'Explore'}
+            </button>
+          </form>
+        </div>
 
-          <div className="bg-white shadow rounded-lg p-6 min-h-64 flex flex-col justify-center border border-gray-200">
-            {errorTrace && (
-              <div className="text-center text-red-600 p-4">
-                <p>{errorTrace}</p>
-              </div>
-            )}
+        <div className="bg-[#0a0a0a] shadow-2xl rounded-2xl p-8 min-h-64 flex flex-col justify-center border border-[#222]">
+          {errorTrace && (
+            <div className="text-center text-red-400 bg-red-500/10 border border-red-500/30 p-4 rounded-xl">
+              <p>{errorTrace}</p>
+            </div>
+          )}
 
-            {!traceData && !loadingTrace && !errorTrace && (
-              <div className="text-center py-12">
-                <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          {!traceData && !loadingTrace && !errorTrace && (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-[#111] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#222]">
+                <svg className="w-8 h-8 text-[#555]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                 </svg>
-                <p className="text-gray-500">Masukkan ID Trace di atas untuk memvisualisasikan jalur eksekusi event.</p>
               </div>
-            )}
+              <p className="text-[#849396] text-sm">Enter a Trace ID to visualize the deterministic event path.</p>
+            </div>
+          )}
 
-            {loadingTrace && (
-              <div className="text-center py-12">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                <p className="text-gray-500 mt-2">Mengekstrak data sirkuit dari EventQueueLog...</p>
+          {loadingTrace && (
+            <div className="text-center py-16 flex flex-col items-center">
+              <div className="inline-block animate-spin rounded-full h-10 w-10 border-2 border-t-emerald-500 border-r-transparent border-b-transparent border-l-transparent"></div>
+              <p className="text-[#849396] mt-4 text-sm tracking-wide">Extracting circuit data from EventQueueLog...</p>
+            </div>
+          )}
+
+          {traceData && (
+            <div className="space-y-8 animate-in fade-in duration-500">
+              <div className="flex justify-between items-center border-b border-[#222] pb-4">
+                <p className="text-sm font-mono text-[#849396]">Trace: <span className="font-bold text-white">{traceData.traceId}</span></p>
+                <p className="text-[10px] uppercase tracking-wider bg-emerald-500/10 text-emerald-400 px-3 py-1.5 rounded-full border border-emerald-500/30">Total {traceData.total_events} Event Nodes</p>
               </div>
-            )}
 
-            {traceData && (
-              <div className="space-y-6">
-                <div className="flex justify-between items-center border-b pb-2">
-                  <p className="text-sm font-mono text-gray-600">Trace: <span className="font-bold text-gray-900">{traceData.traceId}</span></p>
-                  <p className="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">Total {traceData.total_events} Node Event</p>
-                </div>
+              <div className="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-6 overflow-x-auto py-6 pb-8 hide-scrollbar">
+                {traceData.dag_reconstruction.map((node, index) => (
+                  <React.Fragment key={node.id}>
+                    <div className={`relative p-5 rounded-2xl shadow-lg border w-56 text-center flex flex-col justify-between h-32 transition-transform hover:-translate-y-1 ${
+                      node.status === 'COMPLETED' ? 'bg-emerald-500/5 border-emerald-500/30' :
+                      node.status === 'FAILED' ? 'bg-red-500/5 border-red-500/30' : 'bg-yellow-500/5 border-yellow-500/30'
+                    }`}>
+                      {/* Glow effect */}
+                      <div className={`absolute inset-0 rounded-2xl blur-md opacity-20 -z-10 ${
+                        node.status === 'COMPLETED' ? 'bg-emerald-500' :
+                        node.status === 'FAILED' ? 'bg-red-500' : 'bg-yellow-500'
+                      }`}></div>
 
-                {/* Event DAG visual flowchart */}
-                <div className="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4 overflow-x-auto py-4">
-                  {traceData.dag_reconstruction.map((node, index) => (
-                    <React.Fragment key={node.id}>
-                      <div className={`p-4 rounded-lg shadow-sm border-2 w-48 text-center flex flex-col justify-between h-28 ${
-                        node.status === 'COMPLETED' ? 'bg-green-50 border-green-400' :
-                        node.status === 'FAILED' ? 'bg-red-50 border-red-400' : 'bg-yellow-50 border-yellow-400'
-                      }`}>
-                        <div>
-                          <span className="text-xs text-gray-400 font-bold block mb-1">STEP {node.order + 1}</span>
-                          <span className="text-sm font-mono font-semibold text-gray-800 break-words line-clamp-2">{node.type}</span>
-                        </div>
-                        <div className="mt-2">
-                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${
-                            node.status === 'COMPLETED' ? 'bg-green-200 text-green-900' :
-                            node.status === 'FAILED' ? 'bg-red-200 text-red-900' : 'bg-yellow-200 text-yellow-900'
-                          }`}>
-                            {node.status}
-                          </span>
-                        </div>
+                      <div>
+                        <span className="text-[10px] text-[#555] font-black block mb-2 tracking-widest">STEP {node.order + 1}</span>
+                        <span className="text-xs font-mono font-medium text-[#e5e2e1] break-words line-clamp-2">{node.type}</span>
                       </div>
-                      {index < traceData.dag_reconstruction.length - 1 && (
-                        <div className="flex items-center justify-center" aria-hidden="true">
-                          {/* Horizontal Arrow for desktop, Vertical for mobile */}
-                          <span className="hidden md:inline text-gray-400 text-2xl">➔</span>
-                          <span className="inline md:hidden text-gray-400 text-2xl">⬇</span>
-                        </div>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
+                      <div className="mt-3">
+                        <span className={`px-2.5 py-1 text-[9px] uppercase tracking-widest font-bold rounded-full ${
+                          node.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' :
+                          node.status === 'FAILED' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'
+                        }`}>
+                          {node.status}
+                        </span>
+                      </div>
+                    </div>
+                    {index < traceData.dag_reconstruction.length - 1 && (
+                      <div className="flex items-center justify-center" aria-hidden="true">
+                        <span className="hidden md:inline text-[#333] text-2xl">⟶</span>
+                        <span className="inline md:hidden text-[#333] text-2xl">↓</span>
+                      </div>
+                    )}
+                  </React.Fragment>
+                ))}
               </div>
-            )}
-          </div>
-        </section>
-      </div>
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

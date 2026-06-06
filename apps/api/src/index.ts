@@ -103,7 +103,9 @@ bootstrapKernel({ mountedRoutes: mountedPaths }).then(() => {
   startSentinelLoop();
 }).catch((err) => {
   console.error('CRITICAL: SIK Bootstrap failed:', err);
-  process.exit(1);
+  if (!process.env.VERCEL) {
+    process.exit(1);
+  }
 });
 
 if (!process.env.VERCEL) {

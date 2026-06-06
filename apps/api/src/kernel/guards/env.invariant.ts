@@ -10,15 +10,13 @@ export function checkEnvInvariant() {
 
   const missing = requiredVars.filter(v => !process.env[v]);
   if (missing.length > 0) {
-    console.error(`[Env Invariant Failure] Missing mandatory env variables: ${missing.join(', ')}`);
-    process.exit(1);
+    throw new Error(`[Env Invariant Failure] Missing mandatory env variables: ${missing.join(', ')}`);
   }
 
   // Redis Check
   const hasRedis = process.env.REDIS_URL || (process.env.REDIS_HOST && process.env.REDIS_PORT);
   if (!hasRedis) {
-    console.error(`[Env Invariant Failure] Missing Redis configuration (REDIS_URL or REDIS_HOST & REDIS_PORT required)`);
-    process.exit(1);
+    throw new Error(`[Env Invariant Failure] Missing Redis configuration (REDIS_URL or REDIS_HOST & REDIS_PORT required)`);
   }
 
   // QStash Keys Check (only if QStash is active or in production worker context)
@@ -42,8 +40,7 @@ export function checkEnvInvariant() {
 
     for (const url of urlsToCheck) {
       if (localhostPattern.test(url)) {
-        console.error(`[Env Invariant Failure] Localhost endpoint detected in production configuration: "${url}"`);
-        process.exit(1);
+        throw new Error(`[Env Invariant Failure] Localhost endpoint detected in production configuration: "${url}"`);
       }
     }
   }

@@ -27,7 +27,14 @@ import { LinkGraphEngine } from '../services/seo/link_graph_engine';
 import { CannibalizationDetector } from '../services/seo/cannibalization_detector';
 import { IndexingClient } from '../services/seo/indexing_client';
 
+import registryV2Router from './v2/registry';
+import intelligenceV2Router from './v2/intelligence';
+
 const v2Router = new Hono();
+
+// Mount V2 Sub-routers
+v2Router.route('/registry', registryV2Router);
+v2Router.route('/intelligence', intelligenceV2Router);
 
 
 // ── Rate Limiting for Ingestion ──────────────────────────────────────────────
