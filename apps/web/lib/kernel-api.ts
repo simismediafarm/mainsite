@@ -8,7 +8,7 @@
 import { createBrowserClient } from '@supabase/ssr';
 
 export const API_BASE = process.env.NEXT_PUBLIC_KERNEL_API_URL 
-  || (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:4000');
+  || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:4000');
 
 function getSupabaseBrowser() {
   return createBrowserClient(

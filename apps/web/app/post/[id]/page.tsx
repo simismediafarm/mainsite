@@ -16,7 +16,7 @@ export default async function PostReaderPage({ params }: PageProps) {
   let monetization: any = null;
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_KERNEL_API_URL || 'http://127.0.0.1:4000'}/api/mvp/post/${id}`, { cache: 'no-store' });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_KERNEL_API_URL || (process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : 'http://127.0.0.1:4000')}/api/mvp/post/${id}`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       post = data.post || null;
@@ -24,7 +24,7 @@ export default async function PostReaderPage({ params }: PageProps) {
     }
 
     // Fetch feed to calculate related posts on server
-    const feedRes = await fetch(`${process.env.NEXT_PUBLIC_KERNEL_API_URL || 'http://127.0.0.1:4000'}/api/mvp/feed`, { cache: 'no-store' });
+    const feedRes = await fetch(`${process.env.NEXT_PUBLIC_KERNEL_API_URL || (process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : 'http://127.0.0.1:4000')}/api/mvp/feed`, { cache: 'no-store' });
     if (feedRes.ok && post) {
       const feedData = await feedRes.json();
       const allPosts: Post[] = feedData.posts || [];

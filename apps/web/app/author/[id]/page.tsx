@@ -16,7 +16,7 @@ export default async function AuthorPage({ params }: PageProps) {
   let posts: Post[] = [];
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_KERNEL_API_URL || 'http://127.0.0.1:4000'}/api/mvp/author/${id}`, { cache: 'no-store' });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_KERNEL_API_URL || (process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : 'http://127.0.0.1:4000')}/api/mvp/author/${id}`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       author = data.author || null;

@@ -13,7 +13,7 @@ export default async function HomePage() {
   try {
     // Parallel fetch from kernel APIs and registries
     const [feedRes, taxonomyData, widgetData] = await Promise.allSettled([
-      fetch(`${process.env.NEXT_PUBLIC_KERNEL_API_URL || 'http://127.0.0.1:4000'}/api/mvp/feed`, { cache: 'no-store' }),
+      fetch(`${process.env.NEXT_PUBLIC_KERNEL_API_URL || (process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : 'http://127.0.0.1:4000')}/api/mvp/feed`, { cache: 'no-store' }),
       registry.getTaxonomy(),
       registry.getWidgetByKey('home_sidebar')
     ]);

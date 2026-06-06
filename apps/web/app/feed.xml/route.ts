@@ -5,7 +5,7 @@ export async function GET() {
   const baseUrl = 'https://mediafarm.vercel.app';
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_KERNEL_API_URL || 'http://127.0.0.1:4000'}/api/mvp/feed`, { cache: 'no-store' });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_KERNEL_API_URL || (process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : 'http://127.0.0.1:4000')}/api/mvp/feed`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       posts = data.posts || [];

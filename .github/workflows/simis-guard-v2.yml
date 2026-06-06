@@ -61,7 +61,7 @@ jobs:
             echo "$SCORE"
             exit 1
           fi
-          EMA_HIT=$(grep -R "EMA" apps/web apps/api packages \
+          EMA_HIT=$(grep -E -R "\bEMA\b" apps/web apps/api packages \
             --include="*.ts" --include="*.tsx" --include="*.js" \
             --exclude-dir=node_modules --exclude-dir=coverage --exclude-dir=playwright-report || true)
           if [ -n "$EMA_HIT" ]; then
@@ -98,19 +98,19 @@ jobs:
       # -------------------------------
       - name: Validate Rule Engine purity
         run: |
-          if grep -R "Math.random" packages/rollback-engine; then
+          if grep -R "Math.random" packages/rollback-engine --exclude-dir=node_modules; then
             echo "❌ Rollback Engine violation: non-deterministic logic found"
             exit 1
           fi
-          if grep -R "ML" packages/rollback-engine; then
+          if grep -E -R "\bML\b" packages/rollback-engine --exclude-dir=node_modules; then
             echo "❌ Rollback Engine violation: ML logic found"
             exit 1
           fi
-          if grep -E -R "rollback.*trigger" apps packages; then
+          if grep -E -R "rollback.*trigger" apps packages --exclude-dir=node_modules; then
             echo "❌ Violation: Unbounded rollback trigger detected"
             exit 1
           fi
-          if grep -E -R "while\(true\).*rollback" apps packages; then
+          if grep -E -R "while\(true\).*rollback" apps packages --exclude-dir=node_modules; then
             echo "❌ Violation: Infinite loop rollback detected"
             exit 1
           fi

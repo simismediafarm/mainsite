@@ -11,10 +11,10 @@ export class ArtifactLoader {
   private static getApiBase(): string {
     if (typeof window === "undefined") {
       // Server-side: read from process env or fallback
-      return process.env.KERNEL_API_URL || process.env.NEXT_PUBLIC_KERNEL_API_URL || "http://localhost:4000";
+      return process.env.KERNEL_API_URL || process.env.NEXT_PUBLIC_KERNEL_API_URL || (process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : 'http://localhost:4000');
     }
     // Client-side: read from next public env or fallback
-    return process.env.NEXT_PUBLIC_KERNEL_API_URL || "http://localhost:4000";
+    return process.env.NEXT_PUBLIC_KERNEL_API_URL || (process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : 'http://localhost:4000');
   }
 
   static async load(themeId: string, context: LoaderContext): Promise<CachedArtifact | null> {
