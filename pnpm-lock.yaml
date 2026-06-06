@@ -71,6 +71,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.43.0
         version: 2.107.0
+      '@upstash/qstash':
+        specifier: ^2.11.0
+        version: 2.11.0
       better-sqlite3:
         specifier: ^12.10.0
         version: 12.10.0
