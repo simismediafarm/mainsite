@@ -51,18 +51,22 @@ describe("Renderer Runtime Contracts - Unit Tests", () => {
     it("should store and retrieve from cache with default TTL", () => {
       const key = "key1";
       ArtifactCache.set(key, dummyArtifact);
-      expect(ArtifactCache.get(key)).toEqual(dummyArtifact);
+      const entry = ArtifactCache.get(key);
+      expect(entry?.value).toEqual(dummyArtifact);
+      expect(entry?.hardExpiresAt).toBeGreaterThan(Date.now());
     });
 
     it("should expire cache entries after TTL", () => {
-      vi.useFakeTimers();
+      // ArtifactCache doesn't actively clear, it just stores soft/hard expiresAt
+      // The resolver is responsible for honoring them.
+      // We just test that the timestamps are set correctly.
       const key = "key-expire";
-      ArtifactCache.set(key, dummyArtifact, 100); // 100ms TTL
-      expect(ArtifactCache.get(key)).toEqual(dummyArtifact);
-
-      vi.advanceTimersByTime(150);
-      expect(ArtifactCache.get(key)).toBeNull();
-      vi.useRealTimers();
+      const now = Date.now();
+      ArtifactCache.set(key, dummyArtifact);
+      const entry = ArtifactCache.get(key);
+      
+      expect(entry?.softExpiresAt).toBeGreaterThan(now);
+      expect(entry?.hardExpiresAt).toBeGreaterThan(entry?.softExpiresAt ?? 0);
     });
   });
 
@@ -145,7 +149,7 @@ describe("Renderer Runtime Contracts - Unit Tests", () => {
 
       // Verify it was cached
       const cacheKey = ArtifactCache.generateKey("t-1", undefined, "development", "fingerprint_abc", "1.0.0");
-      expect(ArtifactCache.get(cacheKey)).toEqual(dummyArtifact);
+      expect(ArtifactCache.get(cacheKey)?.value).toEqual(dummyArtifact);
     });
 
     it("should check and match bundle hash priority and reject mismatch", async () => {

@@ -1,0 +1,129 @@
+name: SIMIS Migration Guard v2
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  structural-integrity:
+    name: Structural Integrity Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      # -------------------------------
+      # 🚫 PRISMA BOUNDARY ENFORCEMENT
+      # -------------------------------
+      - name: Block unsafe Prisma instantiation
+        run: |
+          echo "Scanning for illegal PrismaClient usage..."
+          if grep -R "new PrismaClient" apps packages --exclude-dir=node_modules; then
+            echo "❌ ERROR: Direct PrismaClient instantiation detected outside @simis/database"
+            exit 1
+          fi
+
+      # -------------------------------
+      # 🚫 SCORING / ATIL DETECTION
+      # -------------------------------
+      - name: Block adaptive scoring logic
+        run: |
+          echo "Scanning for forbidden adaptive logic..."
+          if grep -R "scoreSignal" apps/web apps/api packages; then
+            echo "❌ ERROR: scoring logic detected (scoreSignal)"
+            exit 1
+          fi
+          if grep -R "EMA" apps/web apps/api packages; then
+            echo "❌ ERROR: EMA smoothing logic detected"
+            exit 1
+          fi
+          if grep -E "confidence.*route|adaptive routing|AI routing" apps/web apps/api packages; then
+            echo "❌ ERROR: adaptive routing logic detected"
+            exit 1
+          fi
+
+      # -------------------------------
+      # 🧱 GATEWAY STRUCTURE CHECK
+      # -------------------------------
+      - name: Validate Gateway purity
+        run: |
+          echo "Ensuring gateway is routing-only..."
+          if grep -R "score(" apps/web/lib/gateway; then
+            echo "❌ Gateway violation: scoring logic found"
+            exit 1
+          fi
+          if grep -R "Math.random" apps/web/lib/gateway/router.ts; then
+            echo "❌ Gateway violation: probabilistic routing found"
+            exit 1
+          fi
+
+      # -------------------------------
+      # 🧯 BLOCK AUTO-HEALING ABUSE
+      # -------------------------------
+      - name: Validate Rule Engine purity
+        run: |
+          if grep -R "Math.random" packages/rollback-engine; then
+            echo "❌ Rollback Engine violation: non-deterministic logic found"
+            exit 1
+          fi
+          if grep -R "ML" packages/rollback-engine; then
+            echo "❌ Rollback Engine violation: ML logic found"
+            exit 1
+          fi
+          if grep -E -R "rollback.*trigger" apps packages; then
+            echo "❌ Violation: Unbounded rollback trigger detected"
+            exit 1
+          fi
+          if grep -E -R "while\(true\).*rollback" apps packages; then
+            echo "❌ Violation: Infinite loop rollback detected"
+            exit 1
+          fi
+
+      # -------------------------------
+      # 🧬 CONTRACT TESTS
+      # -------------------------------
+      - name: Run contract validation tests
+        run: |
+          pnpm test
+
+      # -------------------------------
+      # 🧪 BUILD VALIDATION
+      # -------------------------------
+      - name: Build API
+        run: pnpm --filter @simis/api run build
+
+      - name: Build Web
+        run: pnpm --filter @simis/web run build
+
+      # -------------------------------
+      # 🚀 RUNTIME EMULATION GATE
+      # -------------------------------
+      - name: Serverless cold start simulation
+        run: |
+          echo "Running API cold start emulation..."
+          node apps/api/dist/index.js &
+          sleep 5
+          echo "Checking process health..."
+          curl -f http://localhost:4000/health || exit 1
+
+      # -------------------------------
+      # 🧯 FINAL GUARANTEE
+      # -------------------------------
+      - name: Migration Safety Confirmation
+        run: |
+          echo "✅ SIMIS MIGRATION GATE PASSED"
+          echo "System is safe for deployment"

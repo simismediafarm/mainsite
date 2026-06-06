@@ -1,6 +1,6 @@
 import { prisma } from "@simis/database";
 
-export type MigrationStatus = "locked_v1" | "gradual_migration" | "v2_primary" | "completed";
+export type MigrationPhase = "PHASE_0" | "PHASE_1" | "PHASE_2" | "PHASE_3" | "PHASE_4" | "PHASE_5";
 
 export type EndpointMigrationState = {
   endpoint: string;
@@ -8,7 +8,7 @@ export type EndpointMigrationState = {
   v2TrafficRatio: number;
   stabilityScoreV2: number;
   confidence: number;
-  status: MigrationStatus;
+  phase: MigrationPhase;
   lastShiftAt: number; // Stored as Unix ms internally for SAME
 };
 
@@ -32,7 +32,7 @@ export const store: MigrationStateStore = {
         v2TrafficRatio: 0.0,
         stabilityScoreV2: 0,
         confidence: 0,
-        status: "locked_v1",
+        phase: "PHASE_0",
         lastShiftAt: Date.now()
       };
     }
@@ -43,7 +43,7 @@ export const store: MigrationStateStore = {
       v2TrafficRatio: record.v2TrafficRatio,
       stabilityScoreV2: record.stabilityScoreV2,
       confidence: record.confidence,
-      status: record.status as MigrationStatus,
+      phase: record.phase as MigrationPhase,
       lastShiftAt: record.lastShiftAt.getTime()
     };
   },
@@ -56,7 +56,7 @@ export const store: MigrationStateStore = {
         v2TrafficRatio: state.v2TrafficRatio,
         stabilityScoreV2: state.stabilityScoreV2,
         confidence: state.confidence,
-        status: state.status,
+        phase: state.phase,
         lastShiftAt: new Date(state.lastShiftAt)
       },
       create: {
@@ -65,13 +65,13 @@ export const store: MigrationStateStore = {
         v2TrafficRatio: state.v2TrafficRatio,
         stabilityScoreV2: state.stabilityScoreV2,
         confidence: state.confidence,
-        status: state.status,
+        phase: state.phase,
         lastShiftAt: new Date(state.lastShiftAt)
       }
     });
 
     if (process.env.NODE_ENV !== "test") {
-      console.log(`[SAME STATE SAVED] ${endpoint} -> ${state.status} (V1: ${state.v1TrafficRatio.toFixed(2)}, V2: ${state.v2TrafficRatio.toFixed(2)})`);
+      console.log(`[SAME STATE SAVED] ${endpoint} -> ${state.phase} (V1: ${state.v1TrafficRatio.toFixed(2)}, V2: ${state.v2TrafficRatio.toFixed(2)})`);
     }
   },
 
@@ -83,7 +83,7 @@ export const store: MigrationStateStore = {
       v2TrafficRatio: record.v2TrafficRatio,
       stabilityScoreV2: record.stabilityScoreV2,
       confidence: record.confidence,
-      status: record.status as MigrationStatus,
+      phase: record.phase as MigrationPhase,
       lastShiftAt: record.lastShiftAt.getTime()
     }));
   }

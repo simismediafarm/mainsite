@@ -1,0 +1,21 @@
+{
+  "name": "@simis/rollback-engine",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@simis/sentinel": "workspace:*",
+    "@simis/incident-debounce": "workspace:*",
+    "@simis/rollback-rate-limiter": "workspace:*",
+    "@simis/state-machine": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

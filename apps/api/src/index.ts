@@ -95,9 +95,13 @@ const port = process.env.PORT ? parseInt(process.env.PORT) : 4000;
 
 import { bootstrapKernel } from './kernel/bootstrap';
 
+import { startSentinelLoop } from './sentinel-loop';
+
 // SIK: Bootstrap System Invariant Kernel
 const mountedPaths = app.routes.map(r => r.path);
-bootstrapKernel({ mountedRoutes: mountedPaths }).catch((err) => {
+bootstrapKernel({ mountedRoutes: mountedPaths }).then(() => {
+  startSentinelLoop();
+}).catch((err) => {
   console.error('CRITICAL: SIK Bootstrap failed:', err);
   process.exit(1);
 });
