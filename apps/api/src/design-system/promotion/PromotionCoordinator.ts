@@ -2,7 +2,7 @@ import { RegistryContext, RegistryRepository } from "@simis/registry-core";
 import { DesignSystemApplicationService } from "../DesignSystemApplicationService";
 import { PromotionLockProvider } from "./PromotionLockProvider";
 import { PromotionManifest } from "./PromotionManifest";
-import { EventBus } from "@simis/registry-core/src/core/EventBus";
+import { EventBus } from "@simis/registry-core";
 import crypto from "crypto";
 
 export class GraphMismatchError extends Error {

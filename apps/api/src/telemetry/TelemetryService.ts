@@ -1,5 +1,5 @@
-import { EventBus } from "@simis/registry-core/src/core/EventBus";
-import { RegistryEvent } from "@simis/registry-core/src/contracts/RegistryEvent";
+import { EventBus } from "@simis/registry-core";
+import { RegistryEvent } from "@simis/registry-core";
 
 export type MetricType = "cumulative" | "histogram" | "distribution";
 

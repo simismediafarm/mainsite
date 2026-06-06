@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { EdgeConvergenceTracker } from "./EdgeConvergenceTracker";
-import { EventBus } from "@simis/registry-core/src/core/EventBus";
+import { EventBus } from "@simis/registry-core";
 import { CDNPropagationReceipt } from "./CDNPropagationReceipt";
-import { RegistryRepository } from "@simis/registry-core/src/core/RegistryRepository";
+import { RegistryRepository } from "@simis/registry-core";
 
 describe("EdgeConvergenceTracker", () => {
   it("should initialize with 100% convergence score when empty", () => {

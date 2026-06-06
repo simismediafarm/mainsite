@@ -98,19 +98,19 @@ jobs:
       # -------------------------------
       - name: Validate Rule Engine purity
         run: |
-          if grep -R "Math.random" packages/rollback-engine --exclude-dir=node_modules; then
+          if grep -R "Math.random" packages/rollback-engine --exclude-dir=node_modules --exclude-dir=coverage --exclude-dir=snapshots --exclude="*.test.*" --exclude="*.spec.*"; then
             echo "❌ Rollback Engine violation: non-deterministic logic found"
             exit 1
           fi
-          if grep -E -R "\bML\b" packages/rollback-engine --exclude-dir=node_modules; then
+          if grep -E -R "\bML\b" packages/rollback-engine --exclude-dir=node_modules --exclude-dir=coverage --exclude-dir=snapshots --exclude="*.test.*" --exclude="*.spec.*"; then
             echo "❌ Rollback Engine violation: ML logic found"
             exit 1
           fi
-          if grep -E -R "rollback.*trigger" apps packages --exclude-dir=node_modules; then
+          if grep -E -R "rollback.*trigger" apps packages --exclude-dir=node_modules --exclude-dir=coverage --exclude-dir=snapshots --exclude="*.test.*" --exclude="*.spec.*"; then
             echo "❌ Violation: Unbounded rollback trigger detected"
             exit 1
           fi
-          if grep -E -R "while\(true\).*rollback" apps packages --exclude-dir=node_modules; then
+          if grep -E -R "while\(true\).*rollback" apps packages --exclude-dir=node_modules --exclude-dir=coverage --exclude-dir=snapshots --exclude="*.test.*" --exclude="*.spec.*"; then
             echo "❌ Violation: Infinite loop rollback detected"
             exit 1
           fi

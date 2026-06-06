@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { EventBus } from "@simis/registry-core/src/core/EventBus";
+import { EventBus } from "@simis/registry-core";
 import { CdnDistributionService } from "./CdnDistributionService";
 import { InMemoryCdnProvider } from "./InMemoryCdnProvider";
 import { DistributionEventSubscriber } from "./DistributionEventSubscriber";

@@ -1,5 +1,5 @@
 import { CDNPropagationReceipt } from "./CDNPropagationReceipt";
-import { EventBus } from "@simis/registry-core/src/core/EventBus";
+import { EventBus } from "@simis/registry-core";
 import { CdnDistributionService } from "./CdnDistributionService";
 
 export const MAX_RETRY_ATTEMPTS_PER_RECEIPT = 5;

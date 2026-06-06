@@ -1,6 +1,6 @@
 import { CDNPropagationReceipt } from "./CDNPropagationReceipt";
-import { EventBus } from "@simis/registry-core/src/core/EventBus";
-import { RegistryRepository } from "@simis/registry-core/src/core/RegistryRepository";
+import { EventBus } from "@simis/registry-core";
+import { RegistryRepository } from "@simis/registry-core";
 
 export class EdgeConvergenceTracker {
   // Simple in-memory tracker for active receipts

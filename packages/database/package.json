@@ -2,13 +2,15 @@
   "name": "@simis/database",
   "version": "1.0.0",
   "private": true,
-  "main": "src/index.ts",
+  "main": "dist/index.js",
   "types": "src/index.ts",
   "scripts": {
+    "build": "tsc",
     "test:migrations": "echo 'No migration tests defined yet'"
   },
   "devDependencies": {
-    "prisma": "^7.8.0"
+    "prisma": "^7.8.0",
+    "typescript": "^5.0.0"
   },
   "dependencies": {
     "@prisma/client": "^7.8.0",

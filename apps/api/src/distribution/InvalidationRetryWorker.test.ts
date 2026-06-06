@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { InvalidationRetryWorker, MAX_RETRY_ATTEMPTS_PER_RECEIPT } from "./InvalidationRetryWorker";
-import { EventBus } from "@simis/registry-core/src/core/EventBus";
+import { EventBus } from "@simis/registry-core";
 import { CdnDistributionService } from "./CdnDistributionService";
 import { CDNPropagationReceipt } from "./CDNPropagationReceipt";
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { TelemetryService } from "../telemetry/TelemetryService";
-import { EventBus } from "@simis/registry-core/src/core/EventBus";
+import { EventBus } from "@simis/registry-core";
 
 describe("Distribution Telemetry", () => {
   it("should record CDNCacheStateChanged events", async () => {
