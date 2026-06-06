@@ -9,8 +9,12 @@ import { IngestionEngine } from '../services/ingestion';
 import { AdAuctionEngine, AdSlotType } from '../services/ad_auction_engine';
 import { RevenueEngine } from '../services/revenue_engine';
 import { EditorialEngine } from '../services/editorial_engine';
+import { z } from 'zod';
+import { RSSEngine } from '../services/rss_engine';
+import { AIOrchestrator } from '../services/ai/ai_orchestrator';
 
 const app = new Hono();
+const aiOrchestrator = new AIOrchestrator();
 
 // GET /feed - Retrieve ranked posts
 app.get('/feed', async (c) => {
@@ -54,7 +58,6 @@ app.get('/content/:slug', async (c) => {
 });
 
 // Zod Schemas
-import { z } from 'zod';
 
 const createPostSchema = z.object({
   title: z.string().min(1),
@@ -353,5 +356,30 @@ app.post('/editorial/feature/:postId', async (c) => {
   return c.json(res, res.success ? 200 : 403);
 });
 
-export const mvpRouter = app;
+// Trigger RSS Aggregation
+app.post('/ingest/trigger-rss', async (c) => {
+  const result = await RSSEngine.aggregate();
+  return c.json(result);
+});
 
+// AI Enrichment for Candidate
+app.post('/ai/enrich/:candidateId', async (c) => {
+  const { candidateId } = c.req.param();
+  
+  const candidate = await prisma.contentCandidate.findUnique({
+    where: { id: candidateId }
+  });
+
+  if (!candidate) {
+    return c.json({ success: false, error: 'Candidate not found' }, 404);
+  }
+
+  const enrichedContent = await aiOrchestrator.enrichContent(candidate.rawContent);
+  
+  return c.json({
+    success: true,
+    enrichedContent
+  });
+});
+
+export const mvpRouter = app;

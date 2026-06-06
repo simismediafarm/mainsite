@@ -1,5 +1,7 @@
 import { prisma } from '../prisma';
 import { createHash } from 'crypto';
+import Parser from 'rss-parser';
+import { IngestionEngine } from './ingestion';
 
 export class RSSEngine {
   /**
@@ -9,40 +11,43 @@ export class RSSEngine {
   public static async aggregate() {
     console.log(`[RSSEngine] Starting RSS aggregation cycle...`);
     
-    // Mock fetching from a source
-    const mockFeedArticles = [
-      {
-        title: 'The Evolution of AI in Media',
-        link: 'https://example.com/rss/ai-in-media',
-        description: 'How AI is changing the landscape of media production and distribution.',
-        pubDate: new Date().toISOString(),
-      }
-    ];
+    // Fetch registered active RSS sources
+    const sources = await prisma.rssSource.findMany({
+      where: { status: 'active' }
+    });
 
+    if (sources.length === 0) {
+      console.log(`[RSSEngine] No active RSS sources found. Add some to RssSource table.`);
+      return { success: true, ingestedCount: 0 };
+    }
+
+    const parser = new Parser();
     let ingestedCount = 0;
 
-    for (const article of mockFeedArticles) {
-      const hash = createHash('sha256').update(`${article.title}||${article.description}`).digest('hex');
-      
-      // Check if this article exists in candidates to prevent duplicates
-      // (Simplified logic for mock)
-      
-      const candidate = await prisma.contentCandidate.create({
-        data: {
-          sourceType: 'rss',
-          sourceUrl: article.link,
-          title: article.title,
-          rawContent: article.description,
-          normalizedData: JSON.stringify({
-            pubDate: article.pubDate,
-            trustScore: 40 // RSS has lower trust score baseline
-          }),
-          status: 'queued'
-        }
-      });
+    for (const source of sources) {
+      try {
+        console.log(`[RSSEngine] Fetching RSS feed: ${source.url}`);
+        const feed = await parser.parseURL(source.url);
 
-      console.log(`[RSSEngine] Queued RSS Candidate ID: ${candidate.id}`);
-      ingestedCount++;
+        for (const item of feed.items) {
+          if (!item.title || !item.link) continue;
+
+          // Attempt to ingest via IngestionEngine to ensure deduplication and normalization
+          const res = await IngestionEngine.ingest('rss', {
+            title: item.title,
+            content: item.content || item.contentSnippet || '',
+            sourceUrl: item.link,
+            authorId: undefined, // RSS authors are typically string names, mapped later if needed
+            tags: item.categories
+          });
+
+          if (res.success) {
+            ingestedCount++;
+          }
+        }
+      } catch (err: any) {
+        console.error(`[RSSEngine] Failed to parse RSS source ${source.url}:`, err.message);
+      }
     }
 
     console.log(`[RSSEngine] Aggregation cycle complete. Ingested: ${ingestedCount}`);

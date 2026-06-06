@@ -31,9 +31,8 @@ export class IngestionEngine {
     const normalized = this.normalize(payload);
 
     // 2. Deduplicate against existing candidates or posts
-    const hash = this.generateHash(normalized.title, normalized.content);
-    if (await this.isDuplicate(hash)) {
-      console.log(`[IngestionEngine] Duplicate detected. Skipping ingestion. Hash: ${hash}`);
+    if (await this.isDuplicate(normalized.title, normalized.sourceUrl)) {
+      console.log(`[IngestionEngine] Duplicate detected. Skipping ingestion: ${normalized.title}`);
       return { success: false, reason: 'duplicate' };
     }
 
@@ -72,13 +71,19 @@ export class IngestionEngine {
     return createHash('sha256').update(`${title}||${content}`).digest('hex');
   }
 
-  private static async isDuplicate(hash: string): Promise<boolean> {
-    // For MVP, we iterate posts. In prod, we use a hash index/set.
-    const allPosts = await prisma.post.findMany();
-    for (const p of allPosts) {
-      const pHash = this.generateHash(p.title, p.content);
-      if (pHash === hash) return true;
+  private static async isDuplicate(title: string, sourceUrl?: string): Promise<boolean> {
+    // 1. Check ContentCandidates
+    if (sourceUrl) {
+      const existingCandidateUrl = await prisma.contentCandidate.findFirst({ where: { sourceUrl } });
+      if (existingCandidateUrl) return true;
     }
+    const existingCandidateTitle = await prisma.contentCandidate.findFirst({ where: { title } });
+    if (existingCandidateTitle) return true;
+
+    // 2. Check Posts
+    const existingPost = await prisma.post.findFirst({ where: { title } });
+    if (existingPost) return true;
+
     return false;
   }
 }
