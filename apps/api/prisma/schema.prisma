@@ -25,8 +25,8 @@ generator client_worker {
 
 datasource db {
   provider   = "postgresql"
-  schemas    = ["public", "registry", "entity", "attention", "analytics", "integration"]
-  extensions = [pgvector(map: "vector")]
+  schemas    = ["public", "registry", "entity", "attention", "analytics", "integration", "extensions"]
+  extensions = [pgvector(map: "vector", schema: "extensions")]
 }
 
 // ----------------------------------------------------------------------------
@@ -87,11 +87,12 @@ model Session {
 }
 
 model VerificationToken {
+  id         String   @id @default(cuid())
   identifier String
   token      String   @unique
   expires    DateTime
 
-  @@id([identifier, token])
+  @@unique([identifier, token])
   @@schema("public")
 }
 
@@ -226,6 +227,8 @@ model Post {
   affiliateLinks     AffiliateLink[]
   metrics            ContentMetric?
 
+  @@index([authorId])
+  @@index([publicationId])
   @@schema("public")
 }
 
