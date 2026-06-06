@@ -202,6 +202,9 @@ importers:
       '@simis/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@simis/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@simis/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -293,6 +296,9 @@ importers:
       '@simis/ai-router':
         specifier: workspace:*
         version: link:../../packages/ai-router
+      '@simis/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@simis/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -402,6 +408,9 @@ importers:
       '@langchain/openai':
         specifier: ^1.4.7
         version: 1.4.7(@langchain/core@1.1.48(@opentelemetry/api@1.9.1)(openai@6.42.0(ws@8.21.0)(zod@4.4.3))(ws@8.21.0))(ws@8.21.0)
+      '@simis/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@upstash/qstash':
         specifier: ^2.11.0
         version: 2.11.0
