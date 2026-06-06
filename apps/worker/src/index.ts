@@ -1,7 +1,19 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { Receiver } from '@upstash/qstash';
-import { SimisEventSchemaV4 } from '@simis/shared';
+import { SimisEventSchemaV4, SIMIS_QUEUE_NAMES } from '@simis/shared';
+import { Queue } from 'bullmq';
+
+// Boot up the internal workers
+import './ai.worker';
+
+const connection = {
+  host: process.env.REDIS_HOST || 'localhost',
+  port: parseInt(process.env.REDIS_PORT || '6379', 10),
+  password: process.env.REDIS_PASSWORD,
+};
+
+const eventQueue = new Queue(SIMIS_QUEUE_NAMES.AI_ENRICHMENT, { connection });
 
 const app = new Hono();
 
@@ -55,10 +67,19 @@ app.post('/qstash/consume', async (c) => {
   const event = parseResult.data;
   console.log(`[Worker] Received verified event: ${event.type} (Trace ID: ${event.trace_id})`);
 
-  // Execute job logic based on event type...
-  // TODO: Add AI generation jobs, background syncs, etc.
+  // ── PUSH TO BACKGROUND QUEUE (Avoid Render 100s Timeout) ──
+  // Based on SIMIS V4 architecture, we route it to the AI_ENRICHMENT queue.
+  await eventQueue.add('qstash-event', {
+    eventType: event.type,
+    payload: event.payload,
+    traceId: event.trace_id
+  }, {
+    jobId: event.trace_id, // Prevent duplicate jobs if QStash retries
+    removeOnComplete: 1000,
+    removeOnFail: 500
+  });
 
-  return c.json({ success: true, trace_id: event.trace_id });
+  return c.json({ success: true, status: 'enqueued', trace_id: event.trace_id });
 });
 
 // 2. Replay Endpoint (For Execution Replay System)
