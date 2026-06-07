@@ -24,8 +24,8 @@ export class AIOrchestrator {
     if (process.env.OPENAI_API_KEY) {
       this.openAIClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     }
-    // Initialize AI Cache
-    this.aiCache = new AICache(process.env.REDIS_URL || 'redis://localhost:6379');
+    // Initialize AICache
+    this.aiCache = new AICache();
   }
 
   /**

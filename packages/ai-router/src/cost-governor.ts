@@ -16,14 +16,8 @@ export class CostGovernor {
   private redis: Redis;
   private config: CostGovernorConfig;
 
-  constructor(redisUrl: string = process.env.REDIS_URL || 'redis://localhost:6379', config: Partial<CostGovernorConfig> = {}) {
-    this.redis = new Redis(redisUrl, {
-      maxRetriesPerRequest: 3,
-      retryStrategy: (times) => {
-        if (times > 3) return null;
-        return Math.min(times * 100, 2000);
-      }
-    });
+  constructor(redis: Redis, config: Partial<CostGovernorConfig> = {}) {
+    this.redis = redis;
     this.config = { ...DEFAULT_CONFIG, ...config };
   }
 

@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Redis } from '@upstash/redis';
+import IORedis from 'ioredis';
 import lodash from 'lodash';
 import dotenv from 'dotenv';
 
@@ -262,4 +263,54 @@ export async function invalidate_cache(payload: {
   } catch (err) {
     console.error('Failed to invalidate Redis config cache keys:', err);
   }
+}
+
+export function getRedisConfig() {
+  const url = process.env.REDIS_URL;
+  if (url) {
+    return {
+      url,
+      options: {
+        maxRetriesPerRequest: 3,
+        retryStrategy(times: number) {
+          if (times > 3) return null;
+          return Math.min(times * 100, 2000);
+        }
+      }
+    };
+  }
+
+  const host = process.env.REDIS_HOST || 'localhost';
+  const port = parseInt(process.env.REDIS_PORT || '6379', 10);
+  const password = process.env.REDIS_PASSWORD;
+
+  return {
+    host,
+    port,
+    password,
+    maxRetriesPerRequest: 3,
+    retryStrategy(times: number) {
+      if (times > 3) return null;
+      return Math.min(times * 100, 2000);
+    }
+  };
+}
+
+export function createRedisClient(customOptions?: any): IORedis {
+  const config = getRedisConfig();
+  if ('url' in config && typeof config.url === 'string') {
+    return new IORedis(config.url, {
+      ...config.options,
+      ...customOptions
+    });
+  }
+  const fallbackConfig = config as any;
+  return new IORedis({
+    host: fallbackConfig.host,
+    port: fallbackConfig.port,
+    password: fallbackConfig.password,
+    maxRetriesPerRequest: fallbackConfig.maxRetriesPerRequest,
+    retryStrategy: fallbackConfig.retryStrategy,
+    ...customOptions
+  });
 }

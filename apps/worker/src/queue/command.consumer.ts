@@ -1,6 +1,7 @@
 import { Job } from 'bullmq';
 import { SIMISCommand } from '@simis/shared';
 import { prisma } from '@simis/database';
+import { createRedisClient } from '@simis/config';
 
 /**
  * Command Kernel Worker Processor
@@ -96,13 +97,7 @@ async function handleQueueReplay(scope: any) {
 }
 
 async function handleCacheInvalidate(scope: any) {
-  // Import ioredis lazily to avoid import cycle at startup
-  const Redis = (await import('ioredis')).default;
-  const redis = new Redis({
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379', 10),
-    password: process.env.REDIS_PASSWORD
-  });
+  const redis = createRedisClient();
 
   const pattern = scope?.pattern || 'ai-cache:*';
   const keys = await redis.keys(pattern);

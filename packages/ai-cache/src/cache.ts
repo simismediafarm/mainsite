@@ -1,18 +1,13 @@
 import Redis from 'ioredis';
 import { prisma } from '@simis/database';
+import { createRedisClient } from '@simis/config';
 
 // Basic cache structure for semantic caching + immutable snapshots
 export class AICache {
   private redis: Redis;
 
-  constructor(redisUrl: string = process.env.REDIS_URL || 'redis://localhost:6379') {
-    this.redis = new Redis(redisUrl, {
-      maxRetriesPerRequest: 3,
-      retryStrategy: (times) => {
-        if (times > 3) return null;
-        return Math.min(times * 100, 2000);
-      }
-    });
+  constructor(sharedRedis?: Redis) {
+    this.redis = sharedRedis || createRedisClient();
   }
 
   /**

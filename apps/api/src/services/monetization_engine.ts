@@ -15,19 +15,20 @@ export class MonetizationEngine {
     const slots: Set<MonetizationSlot> = new Set();
     const reasoning: string[] = [];
 
-    // Rule 1: Trust Gate
-    if ((post.trustScore || 0) < 0.4) {
-      reasoning.push('Trust score < 0.4: Monetization disabled.');
+    // Rule 1: Trust Gate (Unified to 0-100 scale)
+    const trust = post.trustScore ?? 50;
+    if (trust < 40) {
+      reasoning.push(`Trust score ${trust} < 40: Monetization disabled.`);
       return { allowedSlots: [], reasoning };
     }
 
-    if ((post.trustScore || 0) >= 0.4 && (post.trustScore || 0) < 0.7) {
-      reasoning.push('Trust score between 0.4 and 0.7: Limited slots (end_card only).');
+    if (trust >= 40 && trust < 70) {
+      reasoning.push(`Trust score ${trust} between 40 and 70: Limited slots (end_card only).`);
       slots.add('end_card');
     }
 
-    if ((post.trustScore || 0) >= 0.7) {
-      reasoning.push('Trust score >= 0.7: Full slot eligibility.');
+    if (trust >= 70) {
+      reasoning.push(`Trust score ${trust} >= 70: Full slot eligibility.`);
       slots.add('top_banner');
       slots.add('end_card');
       slots.add('mid_article');

@@ -101,8 +101,44 @@ export class ContentEconomyClassifier {
  * Builds ContentBlockV2 from raw database content_blocks_v2 row
  */
 export function buildContentBlock(row: any): ContentBlockV2 {
-  const economy = ContentEconomyClassifier.evaluate(row.title, row.taxonomy?.tags);
+  const metadata = row.metadata ?? {};
+  const ranking = row.ranking ?? {};
+  const monetization = row.monetization ?? {};
   
+  // Extract fields from JSONB columns
+  const tags = row.taxonomy?.tags ?? metadata.tags ?? metadata.taxonomy?.tags ?? [];
+  const category = row.taxonomy?.category ?? metadata.category ?? metadata.taxonomy?.category ?? 'General';
+  const topic = row.taxonomy?.topic ?? metadata.topic ?? metadata.taxonomy?.topic ?? 'General';
+  const language = row.taxonomy?.language ?? metadata.language ?? metadata.taxonomy?.language ?? 'en';
+
+  const seo = row.seo ?? metadata.seo ?? {};
+  const focus_keyword = seo.focus_keyword ?? metadata.focus_keyword ?? '';
+  const meta_description = seo.meta_description ?? metadata.meta_description ?? '';
+  const schema_type = seo.schema_type ?? metadata.schema_type ?? 'Article';
+  
+  const economy = ContentEconomyClassifier.evaluate(row.title, tags);
+  const search_intent = seo.search_intent ?? metadata.search_intent ?? economy.intent;
+
+  const telemetry = row.telemetry ?? metadata.telemetry ?? {};
+  const views = telemetry.views ?? metadata.views ?? 0;
+  const clicks = telemetry.clicks ?? metadata.clicks ?? 0;
+  const avg_dwell_time = telemetry.avg_dwell_time ?? metadata.avg_dwell_time ?? 0;
+
+  const governance = row.governance ?? metadata.governance ?? {};
+  const is_safe = governance.is_safe ?? metadata.is_safe ?? true;
+  const fraud_score = governance.fraud_score ?? metadata.fraud_score ?? 0;
+  const policy_violations = governance.policy_violations ?? metadata.policy_violations ?? [];
+
+  const delivery = row.delivery ?? metadata.delivery ?? {};
+  const format = delivery.format ?? metadata.format ?? economy.format;
+  const layout_variant = delivery.layout_variant ?? metadata.layout_variant ?? "standard";
+  const render_priority = delivery.render_priority ?? metadata.render_priority ?? 1;
+
+  const execution_lock = row.execution_lock ?? metadata.execution_lock ?? {};
+  const is_pinned = execution_lock.is_pinned ?? metadata.is_pinned ?? false;
+  const expires_at = execution_lock.expires_at ?? metadata.expires_at ?? null;
+  const overridden_by = execution_lock.overridden_by ?? metadata.overridden_by ?? null;
+
   return {
     id: row.id,
     type: row.type || "article",
@@ -111,49 +147,49 @@ export function buildContentBlock(row: any): ContentBlockV2 {
     slug: row.slug,
     blocks: Array.isArray(row.blocks) ? row.blocks : [],
     taxonomy: {
-      tags: row.taxonomy?.tags ?? [],
-      category: row.taxonomy?.category ?? 'General',
-      topic: row.taxonomy?.topic ?? 'General',
-      language: row.taxonomy?.language ?? 'en'
+      tags,
+      category,
+      topic,
+      language
     },
     seo: {
-      focus_keyword: row.seo?.focus_keyword ?? '',
-      search_intent: row.seo?.search_intent ?? economy.intent,
-      meta_description: row.seo?.meta_description ?? '',
-      schema_type: row.seo?.schema_type ?? 'Article'
+      focus_keyword,
+      search_intent,
+      meta_description,
+      schema_type
     },
-    metadata: row.metadata ?? {},
+    metadata,
     monetization: {
-      rules: row.monetization?.rules ?? []
+      rules: monetization.rules ?? []
     },
     ranking: {
-      score: Number(row.ranking?.score ?? 0),
-      base_score: Number(row.ranking?.base_score ?? 0),
-      engagement_score: Number(row.ranking?.engagement_score ?? 0),
-      seo_score: Number(row.ranking?.seo_score ?? 0),
-      affiliate_score: Number(row.ranking?.affiliate_score ?? 0),
-      rpm_score: Number(row.ranking?.rpm_score ?? 0),
-      geo_multiplier: Number(row.ranking?.geo_multiplier ?? 1)
+      score: Number(ranking.score ?? 0),
+      base_score: Number(ranking.base_score ?? 0),
+      engagement_score: Number(ranking.engagement_score ?? 0),
+      seo_score: Number(ranking.seo_score ?? 0),
+      affiliate_score: Number(ranking.affiliate_score ?? 0),
+      rpm_score: Number(ranking.rpm_score ?? 0),
+      geo_multiplier: Number(ranking.geo_multiplier ?? 1)
     },
     telemetry: {
-      views: Number(row.telemetry?.views ?? 0),
-      clicks: Number(row.telemetry?.clicks ?? 0),
-      avg_dwell_time: Number(row.telemetry?.avg_dwell_time ?? 0)
+      views: Number(views),
+      clicks: Number(clicks),
+      avg_dwell_time: Number(avg_dwell_time)
     },
     governance: {
-      is_safe: row.governance?.is_safe ?? true,
-      fraud_score: Number(row.governance?.fraud_score ?? 0),
-      policy_violations: row.governance?.policy_violations ?? []
+      is_safe: !!is_safe,
+      fraud_score: Number(fraud_score),
+      policy_violations
     },
     delivery: {
-      format: row.delivery?.format ?? economy.format,
-      layout_variant: row.delivery?.layout_variant ?? "standard",
-      render_priority: Number(row.delivery?.render_priority ?? 1)
+      format,
+      layout_variant,
+      render_priority: Number(render_priority)
     },
     execution_lock: {
-      is_pinned: row.execution_lock?.is_pinned ?? false,
-      expires_at: row.execution_lock?.expires_at ?? null,
-      overridden_by: row.execution_lock?.overridden_by ?? null
+      is_pinned: !!is_pinned,
+      expires_at,
+      overridden_by
     },
     trace: {
       poe_hash: row.trace?.poe_hash ?? 'FROZEN_GENESIS_SEAL',

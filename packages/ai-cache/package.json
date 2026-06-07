@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "ioredis": "^5.3.2",
+    "@simis/config": "workspace:*",
     "@simis/database": "workspace:*"
   },
   "devDependencies": {

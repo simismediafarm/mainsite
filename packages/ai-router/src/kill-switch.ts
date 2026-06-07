@@ -21,14 +21,8 @@ export class KillSwitch {
   private config: KillSwitchConfig;
   private timeWindowSeconds: number;
 
-  constructor(redisUrl: string = process.env.REDIS_URL || 'redis://localhost:6379', thresholdSeconds: number = 300) {
-    this.redis = new Redis(redisUrl, {
-      maxRetriesPerRequest: 3,
-      retryStrategy: (times) => {
-        if (times > 3) return null;
-        return Math.min(times * 100, 2000);
-      }
-    });
+  constructor(redis: Redis, thresholdSeconds: number = 300) {
+    this.redis = redis;
     this.timeWindowSeconds = thresholdSeconds;
     
     // HYBRID_ENFORCEMENT Policy

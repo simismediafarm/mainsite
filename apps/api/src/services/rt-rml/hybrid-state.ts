@@ -1,14 +1,8 @@
-import { Redis } from "ioredis";
+import { createRedisClient } from "@simis/config";
 import { getSupabase } from "@simis/kernel-graph/dist/executor/kernelExecutor";
 import { BanditState, BanditAction } from "./types";
 
-const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
-  maxRetriesPerRequest: 3,
-  retryStrategy(times) {
-    if (times > 3) return null;
-    return Math.min(times * 100, 2000);
-  }
-});
+const redis = createRedisClient();
 
 redis.on("error", (err) => {
   console.warn("[Redis Hybrid State] Connection warning (safe to ignore in non-Redis environments):", err.message);

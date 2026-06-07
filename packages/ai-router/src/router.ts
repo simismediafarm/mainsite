@@ -1,6 +1,7 @@
 import Redis from 'ioredis';
 import { CostGovernor } from './cost-governor';
 import { KillSwitch } from './kill-switch';
+import { createRedisClient } from '@simis/config';
 
 export type TaskType =
   | "entity_extraction"
@@ -53,16 +54,10 @@ export class AIRouter {
     openrouter: { cost: 6, latency: 6, quality: 9, risk: 5 }
   };
 
-  constructor(redisUrl: string = process.env.REDIS_URL || 'redis://localhost:6379') {
-    this.redis = new Redis(redisUrl, {
-      maxRetriesPerRequest: 3,
-      retryStrategy: (times) => {
-        if (times > 3) return null;
-        return Math.min(times * 100, 2000);
-      }
-    });
-    this.costGovernor = new CostGovernor(redisUrl);
-    this.killSwitch = new KillSwitch(redisUrl);
+  constructor(sharedRedis?: Redis) {
+    this.redis = sharedRedis || createRedisClient();
+    this.costGovernor = new CostGovernor(this.redis);
+    this.killSwitch = new KillSwitch(this.redis);
   }
 
   /**

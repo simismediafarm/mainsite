@@ -3,12 +3,16 @@ import { processEvent } from './queue/event.consumer';
 import { processCommandJob } from './queue/command.consumer';
 import { processAuthzJob } from './queue/authz.consumer';
 import { SIMIS_QUEUE_NAMES } from '@simis/shared';
+import { getRedisConfig } from '@simis/config';
 
-const connection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379', 10),
-  password: process.env.REDIS_PASSWORD,
-};
+const redisConfig = getRedisConfig();
+const connection = 'url' in redisConfig
+  ? redisConfig.url
+  : {
+      host: redisConfig.host,
+      port: redisConfig.port,
+      password: redisConfig.password,
+    };
 
 console.log('🚀 SIMIS D-IOS: Worker Intelligence Kernel Booting...');
 console.log(`   Listening on queues: [${SIMIS_QUEUE_NAMES.AI_ENRICHMENT}] [${SIMIS_QUEUE_NAMES.AUTHZ}] [${SIMIS_QUEUE_NAMES.COMMAND}]`);

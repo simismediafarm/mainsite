@@ -12,6 +12,7 @@
     "@prisma/client": "^7.8.0",
     "@simis/ai-cache": "workspace:*",
     "@simis/ai-router": "workspace:*",
+    "@simis/config": "workspace:*",
     "@simis/database": "workspace:*",
     "@simis/shared": "workspace:*",
     "@upstash/qstash": "^2.11.0",

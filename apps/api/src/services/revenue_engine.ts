@@ -26,6 +26,11 @@ export class RevenueEngine {
       data: { postId, provider: 'System', type: 'impression', impression: true, click: false, conversion: false, revenueValue: revenueAmount }
     });
 
+    await prisma.post.update({
+      where: { id: postId },
+      data: { views: { increment: 1 }, revenueTotal: { increment: revenueAmount } }
+    });
+
     const post = await prisma.post.findUnique({ where: { id: postId } });
     if (!post) return undefined;
 
@@ -33,7 +38,12 @@ export class RevenueEngine {
     
     const savedPost = await prisma.post.update({
       where: { id: postId },
-      data: { status: post.status }
+      data: {
+        ctr: updated.ctr,
+        rpmReal: updated.rpmReal,
+        cpmReal: updated.cpmReal,
+        status: post.status
+      }
     });
 
     await prisma.eventQueueLog.create({
@@ -73,7 +83,12 @@ export class RevenueEngine {
     
     const savedPost = await prisma.post.update({
       where: { id: postId },
-      data: { status: post.status }
+      data: {
+        ctr: updated.ctr,
+        rpmReal: updated.rpmReal,
+        cpmReal: updated.cpmReal,
+        status: post.status
+      }
     });
 
     await prisma.eventQueueLog.create({

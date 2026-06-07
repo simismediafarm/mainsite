@@ -1,12 +1,6 @@
-import { Redis } from "ioredis";
+import { createRedisClient } from "@simis/config";
 
-export const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
-  maxRetriesPerRequest: 3,
-  retryStrategy(times) {
-    if (times > 3) return null;
-    return Math.min(times * 100, 2000);
-  }
-});
+export const redis = createRedisClient();
 
 redis.on("error", (err) => {
   console.warn("[Redis Stream] Connection warning (safe to ignore in non-Redis environments):", err.message);
