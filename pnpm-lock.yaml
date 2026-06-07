@@ -59,6 +59,9 @@ importers:
       '@simis/ai-cache':
         specifier: workspace:*
         version: link:../../packages/ai-cache
+      '@simis/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@simis/database':
         specifier: workspace:^
         version: link:../../packages/database
@@ -296,6 +299,9 @@ importers:
       '@simis/ai-router':
         specifier: workspace:*
         version: link:../../packages/ai-router
+      '@simis/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@simis/database':
         specifier: workspace:*
         version: link:../../packages/database
@@ -361,6 +367,9 @@ importers:
 
   packages/ai-cache:
     dependencies:
+      '@simis/config':
+        specifier: workspace:*
+        version: link:../config
       '@simis/database':
         specifier: workspace:*
         version: link:../database
@@ -408,6 +417,9 @@ importers:
       '@langchain/openai':
         specifier: ^1.4.7
         version: 1.4.7(@langchain/core@1.1.48(@opentelemetry/api@1.9.1)(openai@6.42.0(ws@8.21.0)(zod@4.4.3))(ws@8.21.0))(ws@8.21.0)
+      '@simis/config':
+        specifier: workspace:*
+        version: link:../config
       '@simis/shared':
         specifier: workspace:*
         version: link:../shared
@@ -442,6 +454,9 @@ importers:
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
+      ioredis:
+        specifier: ^5.3.2
+        version: 5.11.1
       lodash:
         specifier: ^4.17.21
         version: 4.18.1

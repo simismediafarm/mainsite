@@ -23,6 +23,12 @@ generator client_worker {
   previewFeatures = ["multiSchema", "postgresqlExtensions"]
 }
 
+generator client_default {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema", "postgresqlExtensions"]
+  binaryTargets   = ["native", "rhel-openssl-3.0.x"]
+}
+
 datasource db {
   provider   = "postgresql"
   schemas    = ["public", "registry", "entity", "attention", "analytics", "integration", "extensions"]

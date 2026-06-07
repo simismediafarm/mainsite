@@ -1,0 +1,16 @@
+node_modules
+.turbo
+.next
+dist
+coverage
+playwright-report
+test-results
+**/.next
+**/node_modules
+**/dist
+**/coverage
+**/playwright-report
+**/test-results
+.git
+.gemini
+.agents

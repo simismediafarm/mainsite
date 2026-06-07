@@ -1,12 +1,16 @@
 {
+  "installCommand": "pnpm install",
+  "buildCommand": "cd apps/api && pnpm run build",
+  "outputDirectory": "apps/api/dist",
+  "framework": null,
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/api/index.ts"
+      "destination": "/api"
     }
   ],
   "functions": {
-    "api/index.ts": {
+    "api/**/*.ts": {
       "includeFiles": "node_modules/.prisma/**"
     }
   }

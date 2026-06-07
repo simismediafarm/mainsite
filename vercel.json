@@ -1,1 +1,15 @@
-{}
+{
+  "buildCommand": "npx turbo run build --filter=@simis/api",
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api"
+    }
+  ],
+  "functions": {
+    "api/**/*.ts": {
+      "includeFiles": "node_modules/.prisma/**"
+    }
+  }
+}
