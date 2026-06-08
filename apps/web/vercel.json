@@ -1,0 +1,6 @@
+{
+  "buildCommand": "npx turbo run build --filter=@simis/web",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "installCommand": "pnpm install"
+}
