@@ -1,16 +1,15 @@
 {
   "installCommand": "cd ../.. && pnpm install",
   "buildCommand": "cd ../.. && npx turbo run build --filter=@simis/api",
-  "outputDirectory": "dist",
   "framework": null,
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/api"
+      "destination": "/api/index"
     }
   ],
   "functions": {
-    "api/**/*.ts": {
+    "api/index.ts": {
       "includeFiles": "node_modules/.prisma/**"
     }
   }
