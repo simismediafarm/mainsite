@@ -59,6 +59,9 @@ app.route('/api/mvp', mvpRouter);
 // Mount SIMIS V2.2 Registries
 app.route('/api/v1/registry', registryRouter);
 
+// Mount Design System API
+app.route('/api/v1/design-system', designSystemRouter);
+
 import { cronRouter } from './routers/cron';
 import { authMiddleware, adminAuthMiddleware } from './middleware/auth';
 import kernelRouter from './routers/kernel';
@@ -82,6 +85,8 @@ app.route('/api/v2', v2Router);
 
 // Mount Kernel API (v3.1)
 app.route('/api/kernel', kernelRouter);
+
+import { designSystemRouter } from './routers/design-system';
 
 // Mount Cron triggers
 app.route('/api/cron', cronRouter);
