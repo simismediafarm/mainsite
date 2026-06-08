@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { prisma } from '../prisma';
+import { Prisma } from '@prisma/client';
 import { eventBus } from '../services/event_bus';
 import { CreatePostDTO, SourceType } from '@simis/shared';
 import { FeedEngine } from '../services/feed_engine';
@@ -93,7 +94,7 @@ app.post('/post', async (c) => {
     const excerpt = body.excerpt || (body.content.length > 160 ? body.content.slice(0, 160) + '...' : body.content);
 
     // AUDIT-009: atomic post create + event log
-    const [post] = await prisma.$transaction(async (tx) => {
+    const [post] = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const created = await tx.post.create({
         data: {
           title: body.title,

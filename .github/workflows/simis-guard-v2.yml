@@ -106,7 +106,7 @@ jobs:
             echo "❌ Rollback Engine violation: ML logic found"
             exit 1
           fi
-          if grep -E -R "rollback.*trigger" apps packages --exclude-dir=node_modules --exclude-dir=coverage --exclude-dir=snapshots --exclude="*.test.*" --exclude="*.spec.*"; then
+          if grep -E -R "rollback.*trigger" apps packages --exclude-dir=node_modules --exclude-dir=coverage --exclude-dir=snapshots --exclude-dir=dist --exclude="*.test.*" --exclude="*.spec.*"; then
             echo "❌ Violation: Unbounded rollback trigger detected"
             exit 1
           fi

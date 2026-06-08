@@ -39,7 +39,7 @@ jobs:
 
       - name: Database Layer Enforcement
         run: |
-          if grep -r "@prisma/client" packages/* | grep -v "packages/database" | grep -v "node_modules"; then
+          if grep -r "@prisma/client" packages/* | grep -v "packages/database" | grep -v "node_modules" | grep -v "/dist/"; then
             echo "❌ Unauthorized Prisma import detected"
             exit 1
           fi
