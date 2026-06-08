@@ -1,4 +1,4 @@
-import './index.css';
+import './globals.css';
 import React from 'react';
 import TopBar from '../components/TopBar';
 

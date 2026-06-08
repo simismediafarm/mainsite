@@ -40,7 +40,14 @@ app.use('*', async (c, next) => {
 });
 
 app.use('*', cors({
-  origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3000',
+  origin: (origin) => {
+    const allowed = (process.env.ALLOWED_ORIGIN || 'http://localhost:3000').split(',').map(s => s.trim());
+    // Also allow Vercel preview URLs for mediafarm project
+    if (!origin) return allowed[0];
+    if (allowed.includes(origin)) return origin;
+    if (origin.endsWith('.vercel.app')) return origin;
+    return allowed[0];
+  },
   allowHeaders: ['Content-Type', 'Authorization', 'X-SIMIS-OPS-KEY', 'X-Trace-Id'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
