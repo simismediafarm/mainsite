@@ -35,16 +35,10 @@ export async function authMiddleware(c: Context, next: Next) {
     return await next();
   }
 
-  let token = '';
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.slice(7);
-  } else {
-    token = c.req.query('token') || '';
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return c.json({ error: 'Unauthorized: missing or invalid Authorization header' }, 401);
   }
-
-  if (!token) {
-    return c.json({ error: 'Unauthorized: missing token in Authorization header or query parameter' }, 401);
-  }
+  const token = authHeader.slice(7);
 
   // Use the anon Supabase client to validate the user token
   const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!);
