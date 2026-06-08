@@ -19,26 +19,38 @@ export default function ObservabilityMonitorView() {
         const { createBrowserClient } = await import('@supabase/ssr');
         const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
         const { data: { session } } = await supabase.auth.getSession();
-        
-        const token = session?.access_token || '';
-        sse = new EventSource(`${API_BASE}/api/kernel/stream?token=${token}`);
-        
-        sse.onmessage = (e) => {
-          try {
-            const payload = JSON.parse(e.data);
-            if (payload.type === 'connected') return;
-            setLogs(prev => [payload, ...prev].slice(0, 15));
-          } catch (err) {}
-        };
-        
-        sse.addEventListener('log', (e: any) => {
-          try {
-            const payload = JSON.parse(e.data);
-            setLogs(prev => [payload, ...prev].slice(0, 15));
-          } catch (err) {}
+        if (!session?.access_token) return;
+
+        const abortController = new AbortController();
+        sse = { close: () => abortController.abort() } as any;
+
+        const response = await fetch(`${API_BASE}/api/kernel/stream`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          signal: abortController.signal,
         });
-      } catch (err) {
-        console.error('Failed to initialize SSE telemetry stream', err);
+        if (!response.body) return;
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n\n');
+          buffer = lines.pop() || '';
+          for (const chunk of lines) {
+            const dataLine = chunk.split('\n').find(l => l.startsWith('data:'));
+            if (!dataLine) continue;
+            try {
+              const payload = JSON.parse(dataLine.slice(5).trim());
+              if (payload.type === 'connected') continue;
+              setLogs(prev => [payload, ...prev].slice(0, 15));
+            } catch {}
+          }
+        }
+      } catch (err: any) {
+        if (err.name !== 'AbortError') console.error('Failed to initialize SSE telemetry stream', err);
       }
     }
 

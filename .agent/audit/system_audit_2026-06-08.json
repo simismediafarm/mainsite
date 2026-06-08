@@ -1,0 +1,82 @@
+{
+  "audit_meta": {
+    "skill": "simis-system-audit",
+    "version": "3.1",
+    "timestamp": "2026-06-08T10:08:47.358Z",
+    "root": "/Users/mac/Downloads/PROYEK/SIMIS"
+  },
+  "executive_summary": {
+    "overall_health_score": 93,
+    "total_issues": 1,
+    "by_severity": {
+      "critical": 0,
+      "high": 1,
+      "medium": 0,
+      "low": 0
+    },
+    "critical_violations": [],
+    "top_risks": [
+      "user_metadata RBAC allows privilege escalation by any authenticated user",
+      "SQLite/Postgres split makes MVP layer invisible to EventQueueLog and traceId",
+      "SSE infinite loop without abort check causes memory leak on every connection"
+    ],
+    "top_optimizations": [
+      "Implement checkSemanticCache with pgvector to reduce LLM API costs by ~30-60%",
+      "Add BullMQ removeOnComplete/removeOnFail to prevent Redis memory exhaustion",
+      "Add EventQueueLog.status index to fix slow metrics queries"
+    ]
+  },
+  "issue_catalog": [
+    {
+      "issue_id": "SIMIS-001",
+      "severity": "high",
+      "category": "architecture",
+      "location": "apps/api/src/kernel/guards/db.invariant.ts, apps/api/src/kernel/runtime/drift.monitor.ts",
+      "description": "2 service(s) write to SQLite store instead of PostgreSQL/EventQueueLog.",
+      "impact": "MVP post CRUD operations are invisible to traceId, EventQueueLog, and BullMQ workers.",
+      "root_cause": "MVP layer predates v3.x event-driven architecture and was never migrated.",
+      "recommended_fix": "Migrate apps/api/src/store/sqlite_db.ts reads/writes to Prisma PostgreSQL. Route mutations through EventQueueLog."
+    }
+  ],
+  "risk_heatmap": {
+    "data_integrity": {
+      "score": "HIGH_RISK",
+      "drivers": [
+        "SQLite/Postgres dual-DB split",
+        "audit log is console.log only",
+        "LLMCallLog uses Float for cost"
+      ]
+    },
+    "system_reliability": {
+      "score": "MEDIUM_RISK",
+      "drivers": [
+        "SSE memory leak in legacy admin",
+        "no circuit breaker on AI Router",
+        "BullMQ jobs never cleaned up"
+      ]
+    },
+    "scalability": {
+      "score": "MEDIUM_RISK",
+      "drivers": [
+        "semantic cache 100% miss rate",
+        "SQLite not horizontally scalable",
+        "no Redis hot-key sharding"
+      ]
+    },
+    "security": {
+      "score": "CRITICAL_RISK",
+      "drivers": [
+        "user_metadata RBAC bypass (privilege escalation)",
+        "no scope payload sanitization"
+      ]
+    },
+    "observability": {
+      "score": "MEDIUM_RISK",
+      "drivers": [
+        "traceId not propagated in MVP/SQLite path",
+        "SSE stream is mock data",
+        "DLQ endpoint is stub"
+      ]
+    }
+  }
+}
