@@ -1,6 +1,6 @@
 {
   "installCommand": "pnpm install",
-  "buildCommand": "cd apps/api && pnpm run build",
+  "buildCommand": "npx turbo run build --filter=@simis/api",
   "outputDirectory": "apps/api/dist",
   "framework": null,
   "rewrites": [
