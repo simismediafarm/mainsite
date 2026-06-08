@@ -6,7 +6,7 @@
 
 generator client {
   provider        = "prisma-client-js"
-  
+  previewFeatures = ["postgresqlExtensions"]
   binaryTargets   = ["native", "rhel-openssl-3.0.x"]
 }
 
@@ -1336,6 +1336,8 @@ model RegistryAuditLog {
 enum LockStrategy {
   EXCLUSIVE
   SHARED
+
+  @@schema("registry")
 }
 
 model RegistryLock {
