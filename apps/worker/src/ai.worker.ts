@@ -5,17 +5,16 @@ import { processAuthzJob } from './queue/authz.consumer';
 import { SIMIS_QUEUE_NAMES } from '@simis/shared';
 import { getRedisConfig } from '@simis/config';
 
+import pino from 'pino';
+
+const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
+
 const redisConfig = getRedisConfig();
 const connection = 'url' in redisConfig
-  ? redisConfig.url
-  : {
-      host: redisConfig.host,
-      port: redisConfig.port,
-      password: redisConfig.password,
-    };
+  ? { url: redisConfig.url }
+  : { host: redisConfig.host, port: redisConfig.port, password: redisConfig.password };
 
-console.log('🚀 SIMIS D-IOS: Worker Intelligence Kernel Booting...');
-console.log(`   Listening on queues: [${SIMIS_QUEUE_NAMES.AI_ENRICHMENT}] [${SIMIS_QUEUE_NAMES.AUTHZ}] [${SIMIS_QUEUE_NAMES.COMMAND}]`);
+logger.info({ queues: [SIMIS_QUEUE_NAMES.AI_ENRICHMENT, SIMIS_QUEUE_NAMES.AUTHZ, SIMIS_QUEUE_NAMES.COMMAND] }, 'SIMIS D-IOS: Worker Intelligence Kernel Booting');
 
 // ── Worker 1: AI Enrichment (Legacy entity/attention/recommendation/demand) ──
 export const enrichmentWorker = new Worker(
@@ -29,11 +28,11 @@ export const enrichmentWorker = new Worker(
 );
 
 enrichmentWorker.on('completed', (job: Job) => {
-  console.log(`[AI_ENRICHMENT COMPLETED] ${job.id}`);
+  logger.info({ jobId: job.id }, '[AI_ENRICHMENT COMPLETED]');
 });
 
 enrichmentWorker.on('failed', (job: Job | undefined, err: Error) => {
-  console.error(`[AI_ENRICHMENT FAILED] ${job?.id}: ${err.message}`);
+  logger.error({ jobId: job?.id, err: err.message }, '[AI_ENRICHMENT FAILED]');
 });
 
 // ── Worker 2: Command Kernel (SIMISCommand operations from Control Tower) ──
@@ -49,11 +48,11 @@ export const commandWorker = new Worker(
 );
 
 commandWorker.on('completed', (job: Job) => {
-  console.log(`[COMMAND COMPLETED] ${job.name} | ${job.id}`);
+  logger.info({ jobName: job.name, jobId: job.id }, '[COMMAND COMPLETED]');
 });
 
 commandWorker.on('failed', (job: Job | undefined, err: Error) => {
-  console.error(`[COMMAND FAILED] ${job?.id}: ${err.message}`);
+  logger.error({ jobId: job?.id, err: err.message }, '[COMMAND FAILED]');
 });
 
 // ── Worker 3: Zero Trust RBAC Decision Engine ─────────────────────────────────
@@ -69,19 +68,19 @@ export const authzWorker = new Worker(
 );
 
 authzWorker.on('completed', (job: Job) => {
-  console.log(`[AUTHZ COMPLETED] ${job.name} | ${job.id}`);
+  logger.info({ jobName: job.name, jobId: job.id }, '[AUTHZ COMPLETED]');
 });
 
 authzWorker.on('failed', (job: Job | undefined, err: Error) => {
-  console.error(`[AUTHZ FAILED] ${job?.id}: ${err.message}`);
+  logger.error({ jobId: job?.id, err: err.message }, '[AUTHZ FAILED]');
 });
 
 // ── Graceful Shutdown ─────────────────────────────────────────────────────────
 process.on('SIGTERM', async () => {
-  console.log('[Worker] Graceful shutdown: closing workers...');
+  logger.info('[Worker] Graceful shutdown: closing workers...');
   await enrichmentWorker.close();
   await authzWorker.close();
   await commandWorker.close();
-  console.log('[Worker] Workers closed. Exiting.');
+  logger.info('[Worker] Workers closed. Exiting.');
   process.exit(0);
 });
