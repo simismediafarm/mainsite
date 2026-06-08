@@ -39,7 +39,7 @@ jobs:
 
     # ── PRODUCTION HARDENING: Tests MUST pass before merge ──────────────────
     - name: Run unit tests
-      run: pnpm test --filter='@simis/kernel-graph' --filter='@simis/config' --filter='@simis/reasoning-engine'
+      run: pnpm --filter='@simis/kernel-graph' --filter='@simis/config' --filter='@simis/reasoning-engine' test
 
     # ── PoE Shadow Validation ────────────────────────────────────────────────
     # Verifies that the execution pipeline produces deterministic PoE hashes
