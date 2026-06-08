@@ -1,6 +1,6 @@
 {
   "buildCommand": "npx turbo run build --filter=@simis/api",
-  "framework": null,
+  "outputDirectory": "apps/api/dist",
   "rewrites": [
     {
       "source": "/(.*)",
