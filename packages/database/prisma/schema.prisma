@@ -1,10 +1,1267 @@
+// ============================================================================
+// CANONICAL PRISMA SCHEMA — @simis/database
+// Single source of truth for all database models.
+// apps/api/prisma/schema.prisma references this via generator output paths.
+// ============================================================================
+
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema", "postgresqlExtensions"]
+  binaryTargets   = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  schemas    = ["public", "registry", "entity", "attention", "analytics", "integration", "extensions"]
+  extensions = [pgvector(map: "vector", schema: "extensions")]
 }
+
+// ----------------------------------------------------------------------------
+// PHASE 1: IDENTITY & ACCESS
+// ----------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("member")
+
+  accounts Account[]
+  sessions Session[]
+  profile  Profile?
+
+  workspaceMembers   WorkspaceMember[]
+  publicationMembers PublicationMember[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("public")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@schema("public")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@schema("public")
+}
+
+model VerificationToken {
+  id         String   @id @default(cuid())
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@schema("public")
+}
+
+// ----------------------------------------------------------------------------
+// PHASE 1: CREATOR PROFILE
+// ----------------------------------------------------------------------------
+
+model Profile {
+  id        String   @id @default(uuid())
+  userId    String?  @unique
+  name      String
+  role      String   @default("author")
+  bio       String?
+  avatar    String?
+  createdAt DateTime @default(now())
+
+  user    User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  posts   Post[]
+  metrics AuthorMetric?
+
+  @@schema("public")
+}
+
+// ----------------------------------------------------------------------------
+// PHASE 2: WORKSPACE & PUBLICATIONS
+// ----------------------------------------------------------------------------
+
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  type      String   @default("personal")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members              WorkspaceMember[]
+  publications         Publication[]
+  systemConfigurations SystemConfiguration[]
+  rankingProfiles      RankingProfile[]
+  revenueRules         RevenueRule[]
+
+  @@schema("public")
+}
+
+model WorkspaceMember {
+  id          String @id @default(uuid())
+  workspaceId String
+  userId      String
+  role        String @default("member")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@schema("public")
+}
+
+model Publication {
+  id          String  @id @default(uuid())
+  workspaceId String
+  name        String
+  slug        String  @unique
+  description String?
+
+  workspace Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members   PublicationMember[]
+  posts     Post[]
+
+  @@index([workspaceId])
+  @@schema("public")
+}
+
+model PublicationMember {
+  id            String @id @default(uuid())
+  publicationId String
+  userId        String
+  role          String @default("author")
+
+  publication Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([publicationId, userId])
+  @@index([userId])
+  @@schema("public")
+}
+
+// ----------------------------------------------------------------------------
+// CONTENT PLATFORM
+// ----------------------------------------------------------------------------
+
+model Post {
+  id      String  @id @default(uuid())
+  title   String
+  slug    String  @unique @default(uuid())
+  content String
+  excerpt String?
+
+  authorId      String
+  publicationId String?
+
+  status    String   @default("draft")
+  tier      String   @default("tier_1")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  views  Int   @default(0)
+  likes  Int   @default(0)
+  clicks Int   @default(0)
+  ctr    Float @default(0.0)
+
+  rpmReal      Float @default(0.0)
+  cpmReal      Float @default(0.0)
+  revenueTotal Float @default(0.0)
+
+  editorialBoost        Int    @default(0)
+  trustScore            Int    @default(50)
+  rankingScore          Float?
+  attentionScore        Float?
+  entityScore           Float?
+  commercialIntentScore Float?
+
+  author      Profile      @relation(fields: [authorId], references: [id])
+  publication Publication? @relation(fields: [publicationId], references: [id])
+
+  adEvents AdEvent[]
+  tags     Tag[]
+
+  seoMetadata        SeoMetadata?
+  clusterMemberships ClusterMembership[]
+  distributionEvents DistributionEvent[]
+  affiliateLinks     AffiliateLink[]
+  metrics            ContentMetric?
+
+  @@index([authorId])
+  @@index([publicationId])
+  @@schema("public")
+}
+
+model Tag {
+  id    String @id @default(uuid())
+  name  String @unique
+  posts Post[]
+
+  @@schema("public")
+}
+
+model AdEvent {
+  id           String   @id @default(uuid())
+  postId       String
+  type         String
+  provider     String
+  impression   Boolean  @default(false)
+  click        Boolean  @default(false)
+  conversion   Boolean  @default(false)
+  revenueValue Float    @default(0.0)
+  timestamp    DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@schema("analytics")
+}
+
+model RssSource {
+  id            String    @id @default(uuid())
+  name          String
+  url           String    @unique
+  category      String
+  fetchInterval Int       @default(30)
+  lastFetched   DateTime?
+  status        String    @default("active")
+
+  @@schema("integration")
+}
+
+model RssEntry {
+  id          String   @id @default(uuid())
+  sourceId    String
+  title       String
+  url         String   @unique
+  publishedAt DateTime
+  content     String?
+  status      String   @default("pending")
+
+  @@schema("integration")
+}
+
+model ApiSource {
+  id       String @id @default(uuid())
+  provider String @unique
+  endpoint String
+  category String
+  status   String @default("active")
+
+  @@schema("integration")
+}
+
+model ContentCandidate {
+  id             String   @id @default(uuid())
+  sourceType     String
+  sourceUrl      String?
+  title          String
+  rawContent     String
+  extractedTags  String?
+  normalizedData String?
+  status         String   @default("queued")
+  createdAt      DateTime @default(now())
+
+  @@schema("integration")
+}
+
+model TopicCluster {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  slug        String  @unique
+  description String?
+  parent      String?
+
+  memberships ClusterMembership[]
+  metrics     TopicMetric?
+
+  @@schema("public")
+}
+
+model ClusterMembership {
+  id        String @id @default(uuid())
+  postId    String
+  clusterId String
+  role      String @default("spoke")
+
+  post    Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  cluster TopicCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, clusterId])
+  @@index([clusterId])
+  @@schema("public")
+}
+
+model SeoMetadata {
+  id             String  @id @default(uuid())
+  postId         String  @unique
+  seoTitle       String?
+  seoDescription String?
+  canonicalUrl   String?
+  openGraph      String?
+  twitterCard    String?
+  jsonLd         String?
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@schema("public")
+}
+
+model DistributionEvent {
+  id        String   @id @default(uuid())
+  postId    String
+  channel   String
+  status    String   @default("success")
+  timestamp DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@schema("analytics")
+}
+
+model AffiliateLink {
+  id           String @id @default(uuid())
+  postId       String
+  provider     String
+  productUrl   String
+  affiliateUrl String
+  clicks       Int    @default(0)
+  conversions  Int    @default(0)
+  revenue      Float  @default(0.0)
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@schema("analytics")
+}
+
+model ContentMetric {
+  id              String @id @default(uuid())
+  postId          String @unique
+  sessionDepthAvg Float  @default(0.0)
+  returningUsers  Int    @default(0)
+  bounceRate      Float  @default(0.0)
+  timeOnPageAvg   Float  @default(0.0)
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@schema("analytics")
+}
+
+model AuthorMetric {
+  id            String @id @default(uuid())
+  authorId      String @unique
+  totalReads    Int    @default(0)
+  totalRevenue  Float  @default(0.0)
+  followerCount Int    @default(0)
+
+  profile Profile @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@schema("analytics")
+}
+
+model TopicMetric {
+  id              String @id @default(uuid())
+  clusterId       String @unique
+  totalViews      Int    @default(0)
+  organicTraffic  Int    @default(0)
+  clusterRevenue  Float  @default(0.0)
+  rankingKeywords Int    @default(0)
+
+  cluster TopicCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+
+  @@schema("analytics")
+}
+
+// ----------------------------------------------------------------------------
+// REGISTRIES
+// ----------------------------------------------------------------------------
+
+model FeatureFlag {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  enabled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("registry")
+}
+
+model NavigationRegistry {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  schema    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("registry")
+}
+
+model TaxonomyRegistry {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  schema    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("registry")
+}
+
+model PageRegistry {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("registry")
+}
+
+model WidgetRegistry {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  schema    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("registry")
+}
+
+model RouteRegistry {
+  id        String   @id @default(uuid())
+  path      String   @unique
+  target    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("registry")
+}
+
+model EngineRegistry {
+  id                String          @id @default(uuid())
+  slug              String          @unique
+  name              String
+  version           String          @default("1.0.0")
+  status            String          @default("inactive")
+  isEnabled         Boolean         @default(false)
+  rolloutPercentage Int             @default(100)
+  capabilities      Json?
+  configuration     Json?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  eventEnvelopes    EventEnvelope[]
+  pipelineHealth    PipelineHealth?
+
+  @@schema("registry")
+}
+
+model SystemConfiguration {
+  id          String     @id @default(uuid())
+  key         String
+  value       Json
+  scope       String     @default("global")
+  environment String     @default("production")
+  workspaceId String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([key, workspaceId, environment])
+  @@index([workspaceId])
+  @@schema("registry")
+}
+
+model EventEnvelope {
+  eventId       String         @id @default(uuid())
+  traceId       String
+  correlationId String?
+  causationId   String?
+  aggregateId   String?
+  aggregateType String?
+  version       Int            @default(1)
+  engineId      String
+  eventType     String
+  status        String
+  source        String?
+  payload       Json
+  timestamp     DateTime       @default(now())
+  engine        EngineRegistry @relation(fields: [engineId], references: [id])
+
+  @@index([traceId])
+  @@index([engineId])
+  @@index([correlationId])
+  @@schema("analytics")
+}
+
+model PipelineHealth {
+  id              String         @id @default(uuid())
+  engineId        String         @unique
+  status          String
+  queueDepth      Int            @default(0)
+  errorRate       Float          @default(0.0)
+  throughput      Float          @default(0.0)
+  avgExecutionMs  Float          @default(0.0)
+  p95ExecutionMs  Float          @default(0.0)
+  lastError       String?
+  lastExecutionAt DateTime?
+  engine          EngineRegistry @relation(fields: [engineId], references: [id])
+
+  @@schema("analytics")
+}
+
+model RankingProfile {
+  id                 String              @id @default(uuid())
+  name               String
+  version            Int                 @default(1)
+  schemaVersion      Int                 @default(1)
+  isActive           Boolean             @default(false)
+  weights            Json
+  workspaceId        String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  publishedAt        DateTime?
+  archivedAt         DateTime?
+  workspace          Workspace?          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  controlExperiments RankingExperiment[] @relation("ControlProfile")
+  variantExperiments RankingExperiment[] @relation("VariantProfile")
+
+  @@unique([name, version, workspaceId])
+  @@index([workspaceId])
+  @@schema("registry")
+}
+
+model RankingFactor {
+  id                  String  @id @default(uuid())
+  slug                String  @unique
+  type                String
+  description         String?
+  defaultWeight       Float?
+  minValue            Float?
+  maxValue            Float?
+  normalizationMethod String?
+  isActive            Boolean @default(true)
+
+  @@schema("registry")
+}
+
+model RankingDecisionLog {
+  id            String   @id @default(uuid())
+  entityId      String
+  profileId     String
+  traceId       String?
+  correlationId String?
+  experimentId  String?
+  context       String?
+  score         Float
+  factors       Json
+  timestamp     DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model EngagementEvent {
+  id        String   @id @default(uuid())
+  sessionId String
+  eventType String
+  payload   Json
+  timestamp DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model IntegritySignal {
+  id                         String   @id @default(uuid())
+  sessionId                  String   @unique
+  trustedEngagementScore     Float    @default(0.0)
+  fraudProbability           Float    @default(0.0)
+  botDetectionSignal         Float    @default(0.0)
+  engagementQualityScore     Float    @default(0.0)
+  sessionQualityScore        Float    @default(0.0)
+  attentionAuthenticityScore Float    @default(0.0)
+  timestamp                  DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model RevenueRule {
+  id          String     @id @default(uuid())
+  name        String
+  condition   Json
+  action      Json
+  isActive    Boolean    @default(false)
+  priority    Int        @default(0)
+  version     Int        @default(1)
+  createdBy   String?
+  publishedAt DateTime?
+  archivedAt  DateTime?
+  workspaceId String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@schema("registry")
+}
+
+// ----------------------------------------------------------------------------
+// ENTITY INTELLIGENCE
+// ----------------------------------------------------------------------------
+
+model EntityNode {
+  id              String   @id @default(uuid())
+  entityType      String
+  name            String
+  metadata        Json?
+  authorityScore  Float    @default(0.0)
+  popularityScore Float    @default(0.0)
+  trustScore      Float    @default(0.0)
+  velocityScore   Float    @default(0.0)
+  createdAt       DateTime @default(now())
+
+  @@schema("entity")
+}
+
+model EntityRelationship {
+  id               String @id @default(uuid())
+  sourceId         String
+  targetId         String
+  relationshipType String
+  weight           Float  @default(1.0)
+
+  @@schema("entity")
+}
+
+model EntityGraphVersion {
+  id          String   @id @default(uuid())
+  version     Int
+  description String?
+  createdAt   DateTime @default(now())
+
+  @@schema("entity")
+}
+
+model EntityGraphSnapshot {
+  id        String   @id @default(uuid())
+  versionId String
+  graphData Json
+  createdAt DateTime @default(now())
+
+  @@schema("entity")
+}
+
+model EntityRelationshipVersion {
+  id             String   @id @default(uuid())
+  relationshipId String
+  version        Int
+  previousWeight Float
+  newWeight      Float
+  createdAt      DateTime @default(now())
+
+  @@schema("entity")
+}
+
+// ----------------------------------------------------------------------------
+// ANALYTICS SNAPSHOTS & LOGS
+// ----------------------------------------------------------------------------
+
+model RankingSnapshot {
+  id              String   @id @default(uuid())
+  profileId       String
+  profileVersion  Int
+  entityType      String
+  context         String
+  snapshotVersion Int      @default(1)
+  snapshotDate    DateTime @db.Date
+  generatedAt     DateTime @default(now())
+  payload         Json
+
+  @@schema("analytics")
+}
+
+model IntegritySnapshot {
+  id              String   @id @default(uuid())
+  traceId         String
+  entityId        String
+  integrityScore  Float
+  snapshotVersion Int      @default(1)
+  snapshotDate    DateTime @db.Date
+  generatedAt     DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model RevenueExecution {
+  id             String   @id @default(uuid())
+  ruleId         String
+  targetEntityId String
+  actionType     String
+  value          Json
+  executedAt     DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model RevenueRuleVersion {
+  id            String   @id @default(uuid())
+  revenueRuleId String
+  version       Int
+  definition    Json
+  createdAt     DateTime @default(now())
+  createdBy     String?
+
+  @@schema("registry")
+}
+
+model RevenueExperiment {
+  id                String    @id @default(uuid())
+  name              String
+  controlRuleSetId  String
+  variantRuleSetId  String
+  trafficPercentage Int
+  status            String
+  startedAt         DateTime
+  endedAt           DateTime?
+
+  @@schema("registry")
+}
+
+model PipelineDependency {
+  id             String  @id @default(uuid())
+  sourceEngine   String
+  targetEngine   String
+  dependencyType String
+  isActive       Boolean @default(true)
+
+  @@schema("registry")
+}
+
+model RevenueSnapshot {
+  id              String   @id @default(uuid())
+  traceId         String
+  entityId        String
+  revenueScore    Float
+  confidence      Float
+  snapshotVersion Int      @default(1)
+  snapshotDate    DateTime @db.Date
+  generatedAt     DateTime @default(now())
+  payload         Json?
+
+  @@schema("analytics")
+}
+
+model RevenueDecisionLog {
+  id          String   @id @default(uuid())
+  traceId     String
+  ruleId      String
+  action      String
+  beforeScore Float
+  afterScore  Float
+  timestamp   DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model EngineExecutionLog {
+  id            String    @id @default(uuid())
+  engineId      String
+  traceId       String
+  status        String
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  executionMs   Int?
+  input         Json?
+  output        Json?
+  error         Json?
+  expiresAt     DateTime?
+  retentionDays Int?      @default(30)
+
+  @@schema("analytics")
+}
+
+model RankingExperiment {
+  id                String         @id @default(uuid())
+  name              String
+  controlProfileId  String
+  variantProfileId  String
+  controlProfile    RankingProfile @relation("ControlProfile", fields: [controlProfileId], references: [id])
+  variantProfile    RankingProfile @relation("VariantProfile", fields: [variantProfileId], references: [id])
+  trafficPercentage Int
+  status            String
+  startedAt         DateTime       @default(now())
+  endedAt           DateTime?
+
+  @@schema("registry")
+}
+
+model IntelligenceSnapshot {
+  id         String                       @id @default(uuid())
+  inputHash  String                       @unique @default(uuid())
+  taskType   String                       @default("unknown")
+  modelUsed  String                       @default("unknown")
+  confidence Float?
+  embedding  Unsupported("vector(1536)")?
+
+  entityId                   String
+  traceId                    String
+  entityScore                Float
+  attentionScore             Float
+  recommendationScore        Float
+  demandScore                Float
+  rankingScore               Float
+  integrityScore             Float
+  revenueScore               Float
+  compositeIntelligenceScore Float
+  generatedAt                DateTime @default(now())
+
+  @@index([entityId])
+  @@index([traceId])
+  @@index([generatedAt])
+  @@schema("analytics")
+}
+
+model IntelligenceDecisionLog {
+  id        String   @id @default(uuid())
+  traceId   String
+  entityId  String
+  payload   Json
+  timestamp DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model LLMCallLog {
+  id        String   @id @default(uuid())
+  provider  String
+  model     String
+  taskType  String
+  latencyMs Int
+  cost      Decimal  @db.Decimal(10, 6)
+  status    String
+  createdAt DateTime @default(now())
+
+  @@index([provider])
+  @@index([taskType])
+  @@schema("analytics")
+}
+
+model AICostLedger {
+  id              String   @id @default(uuid())
+  traceId         String
+  userId          String?
+  featureId       String?
+  provider        String
+  model           String
+  tokensIn        Int      @default(0)
+  tokensOut       Int      @default(0)
+  latencyMs       Int      @default(0)
+  providerCostUsd Decimal  @default(0.0) @db.Decimal(10, 6)
+  cacheHit        Boolean  @default(false)
+  timestamp       DateTime @default(now())
+
+  @@index([traceId])
+  @@index([userId])
+  @@index([featureId])
+  @@index([provider])
+  @@index([timestamp])
+  @@schema("analytics")
+}
+
+model AIExecutionReplay {
+  id                String   @id @default(uuid())
+  traceId           String   @unique
+  requestInput      Json
+  providerSelection String
+  fallbackChain     Json
+  finalOutput       Json
+  deterministicMode Boolean  @default(true)
+  seededExecution   Boolean  @default(false)
+  timestamp         DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model EventQueueLog {
+  id        String   @id @default(uuid())
+  traceId   String?
+  actor     String?
+  source    String?
+  eventType String
+  payload   Json
+  mode      String   @default("execute")
+  status    String   @default("QUEUED")
+  createdAt DateTime @default(now())
+
+  @@index([eventType])
+  @@index([traceId])
+  @@index([status])
+  @@schema("analytics")
+}
+
+model EntitySnapshot {
+  id                 String   @id @default(uuid())
+  entityId           String
+  authorityScore     Float
+  trustScore         Float
+  popularityScore    Float
+  velocityScore      Float
+  overallEntityScore Float
+  traceId            String
+  snapshotVersion    Int
+  generatedAt        DateTime @default(now())
+
+  @@index([entityId])
+  @@index([traceId])
+  @@index([generatedAt])
+  @@index([overallEntityScore])
+  @@schema("analytics")
+}
+
+model EntityDecisionLog {
+  id        String   @id @default(uuid())
+  entityId  String
+  traceId   String
+  action    String
+  payload   Json
+  timestamp DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model EntityAuthorityHistory {
+  id             String   @id @default(uuid())
+  entityId       String
+  authorityScore Float
+  timestamp      DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model EntityTrendHistory {
+  id          String   @id @default(uuid())
+  entityId    String
+  trendVector Json
+  timestamp   DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model AttentionSession {
+  id         String    @id @default(uuid())
+  entityId   String
+  userId     String?
+  startedAt  DateTime  @default(now())
+  endedAt    DateTime?
+  durationMs Int?
+
+  @@schema("analytics")
+}
+
+model AttentionSnapshot {
+  id                         String   @id @default(uuid())
+  entityId                   String
+  attentionScore             Float
+  attentionQualityScore      Float
+  attentionAuthenticityScore Float
+  traceId                    String
+  generatedAt                DateTime @default(now())
+
+  @@index([entityId])
+  @@index([attentionScore])
+  @@index([generatedAt])
+  @@schema("analytics")
+}
+
+model AttentionDecisionLog {
+  id        String   @id @default(uuid())
+  traceId   String
+  entityId  String
+  action    String
+  payload   Json
+  timestamp DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model AttentionHistory {
+  id             String   @id @default(uuid())
+  entityId       String
+  attentionScore Float
+  timestamp      DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model RecommendationProfile {
+  id        String   @id @default(uuid())
+  name      String
+  weights   Json
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@schema("registry")
+}
+
+model RecommendationExperiment {
+  id                String    @id @default(uuid())
+  name              String
+  controlProfileId  String
+  variantProfileId  String
+  trafficPercentage Int
+  status            String
+  startedAt         DateTime  @default(now())
+  endedAt           DateTime?
+
+  @@schema("registry")
+}
+
+model RecommendationSnapshot {
+  id                  String   @id @default(uuid())
+  entityId            String
+  profileId           String?
+  recommendationScore Float
+  candidateCount      Int
+  diversityScore      Float
+  traceId             String
+  generatedAt         DateTime @default(now())
+
+  @@index([entityId])
+  @@index([profileId])
+  @@index([generatedAt])
+  @@schema("analytics")
+}
+
+model RecommendationDecisionLog {
+  id        String   @id @default(uuid())
+  traceId   String
+  action    String
+  payload   Json
+  timestamp DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model RecommendationCandidateSnapshot {
+  id          String   @id @default(uuid())
+  traceId     String
+  candidates  Json
+  generatedAt DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model DemandSignal {
+  id        String   @id @default(uuid())
+  source    String
+  payload   Json
+  timestamp DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model DemandSnapshot {
+  id                 String   @id @default(uuid())
+  entityId           String
+  opportunityScore   Float
+  forecastConfidence Float
+  traceId            String
+  generatedAt        DateTime @default(now())
+
+  @@index([entityId])
+  @@index([opportunityScore])
+  @@index([generatedAt])
+  @@schema("analytics")
+}
+
+model DemandDecisionLog {
+  id        String   @id @default(uuid())
+  traceId   String
+  action    String
+  payload   Json
+  timestamp DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model DemandForecast {
+  id                 String   @id @default(uuid())
+  entityId           String
+  predictedScore     Float
+  forecastDate       DateTime
+  confidenceInterval Float
+  createdAt          DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model DemandForecastSnapshot {
+  id          String   @id @default(uuid())
+  forecastId  String
+  payload     Json
+  generatedAt DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model SnapshotLineage {
+  id               String   @id @default(uuid())
+  traceId          String
+  sourceSnapshotId String
+  targetSnapshotId String
+  timestamp        DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model DecisionLineage {
+  id               String   @id @default(uuid())
+  traceId          String
+  sourceDecisionId String
+  targetDecisionId String
+  timestamp        DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model SnapshotDependency {
+  id             String  @id @default(uuid())
+  sourceEngine   String
+  targetEngine   String
+  dependencyType String
+  isActive       Boolean @default(true)
+
+  @@schema("registry")
+}
+
+model DecisionDependency {
+  id             String  @id @default(uuid())
+  sourceEngine   String
+  targetEngine   String
+  dependencyType String
+  isActive       Boolean @default(true)
+
+  @@schema("registry")
+}
+
+model SecurityEventLog {
+  id          String  @id @default(uuid())
+  traceId     String
+  actor       String?
+  source      String
+  eventType   String
+  payload     Json?
+  contextHash String?
+  timestamp   BigInt
+
+  @@index([traceId])
+  @@index([actor])
+  @@index([eventType])
+  @@index([timestamp])
+  @@schema("analytics")
+}
+
+model SecurityAuditLog {
+  id           String  @id @default(uuid())
+  traceId      String
+  actor        String?
+  commandType  String
+  decision     String
+  riskScore    Float?
+  roleResolved String?
+  latencyMs    Int?
+  timestamp    BigInt
+
+  @@index([traceId])
+  @@schema("analytics")
+}
+
+model AuthzReplaySnapshot {
+  id        String   @id @default(uuid())
+  traceId   String   @unique
+  snapshot  Json
+  createdAt DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model ControlAudit {
+  id        String   @id @default(uuid())
+  actor     String
+  action    String
+  target    String
+  status    String
+  payload   Json?
+  timestamp DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model DeadLetterQueue {
+  id        String   @id @default(uuid())
+  queueName String
+  jobId     String
+  payload   Json
+  error     String?
+  failedAt  DateTime @default(now())
+
+  @@schema("analytics")
+}
+
+model GlobalRankingWeights {
+  id        String   @id @default("global")
+  weights   Json
+  updatedAt DateTime @updatedAt
+
+  @@schema("registry")
+}
+
+model MigrationState {
+  id               String   @id @default(uuid())
+  endpoint         String   @unique
+  v1TrafficRatio   Float    @default(1.0)
+  v2TrafficRatio   Float    @default(0.0)
+  stabilityScoreV2 Float    @default(0.0)
+  confidence       Float    @default(0.0)
+  phase            String   @default("PHASE_0")
+  lastShiftAt      DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@schema("registry")
+}
+
+// ----------------------------------------------------------------------------
+// REGISTRY CORE (dari packages/database — design system registry)
+// ----------------------------------------------------------------------------
 
 model RegistryDefinition {
   uid               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -18,11 +1275,11 @@ model RegistryDefinition {
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  currentVersion    RegistryVersion? @relation("CurrentVersion", fields: [currentVersionUid], references: [uid], onDelete: Restrict)
-  versions          RegistryVersion[] @relation("DefinitionVersions")
-  dependencies      RegistryDependency[] @relation("DefinitionDependencies")
-  dependents        RegistryDependency[] @relation("DefinitionDependents")
-  auditLogs         RegistryAuditLog[] @relation("DefinitionAuditLogs")
+  currentVersion RegistryVersion?     @relation("CurrentVersion", fields: [currentVersionUid], references: [uid], onDelete: Restrict)
+  versions       RegistryVersion[]    @relation("DefinitionVersions")
+  dependencies   RegistryDependency[] @relation("DefinitionDependencies")
+  dependents     RegistryDependency[] @relation("DefinitionDependents")
+  auditLogs      RegistryAuditLog[]   @relation("DefinitionAuditLogs")
 
   @@unique([type, id, environment, tenantId, workspace], name: "registry_definitions_unique_id")
   @@index([type, status])
@@ -30,6 +1287,7 @@ model RegistryDefinition {
   @@index([tenantId, environment])
   @@index([workspace, environment])
   @@map("registry_definitions")
+  @@schema("registry")
 }
 
 model RegistryVersion {
@@ -41,24 +1299,26 @@ model RegistryVersion {
   definition    Json
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  definitionRef RegistryDefinition @relation("DefinitionVersions", fields: [definitionUid], references: [uid], onDelete: Restrict)
+  definitionRef RegistryDefinition   @relation("DefinitionVersions", fields: [definitionUid], references: [uid], onDelete: Restrict)
   currentFor    RegistryDefinition[] @relation("CurrentVersion")
 
   @@map("registry_versions")
+  @@schema("registry")
 }
 
 model RegistryDependency {
-  uid            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  definitionUid  String   @map("definition_uid") @db.Uuid
-  dependsOnUid   String   @map("depends_on_uid") @db.Uuid
+  uid                 String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  definitionUid       String  @map("definition_uid") @db.Uuid
+  dependsOnUid        String  @map("depends_on_uid") @db.Uuid
   dependsOnVersionUid String? @map("depends_on_version_uid") @db.Uuid
-  dependencyMode String   @map("dependency_mode")
-  dependencyType String   @map("dependency_type")
+  dependencyMode      String  @map("dependency_mode")
+  dependencyType      String  @map("dependency_type")
 
-  definition     RegistryDefinition @relation("DefinitionDependencies", fields: [definitionUid], references: [uid], onDelete: Cascade)
-  dependsOn      RegistryDefinition @relation("DefinitionDependents", fields: [dependsOnUid], references: [uid], onDelete: Restrict)
+  definition RegistryDefinition @relation("DefinitionDependencies", fields: [definitionUid], references: [uid], onDelete: Cascade)
+  dependsOn  RegistryDefinition @relation("DefinitionDependents", fields: [dependsOnUid], references: [uid], onDelete: Restrict)
 
   @@map("registry_dependencies")
+  @@schema("registry")
 }
 
 model RegistryAuditLog {
@@ -69,9 +1329,10 @@ model RegistryAuditLog {
   performedAt   DateTime @default(now()) @map("performed_at") @db.Timestamptz
   changes       Json?
 
-  definition    RegistryDefinition @relation("DefinitionAuditLogs", fields: [definitionUid], references: [uid], onDelete: Cascade)
+  definition RegistryDefinition @relation("DefinitionAuditLogs", fields: [definitionUid], references: [uid], onDelete: Cascade)
 
   @@map("registry_audit_logs")
+  @@schema("registry")
 }
 
 enum LockStrategy {
@@ -80,15 +1341,14 @@ enum LockStrategy {
 }
 
 model RegistryLock {
-  uid          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  lockType     String   @map("lock_type")
-  strategy     LockStrategy @default(EXCLUSIVE)
-  resourceUid  String   @map("resource_uid") @db.Uuid
-  acquiredBy   String   @map("acquired_by")
-  expiresAt    DateTime @map("expires_at") @db.Timestamptz
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
-
-  // Partial unique index created in SQL migration: CREATE UNIQUE INDEX idx_registry_locks_active ON registry_locks (resource_uid, lock_type) WHERE expires_at > NOW();
+  uid         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lockType    String       @map("lock_type")
+  strategy    LockStrategy @default(EXCLUSIVE)
+  resourceUid String       @map("resource_uid") @db.Uuid
+  acquiredBy  String       @map("acquired_by")
+  expiresAt   DateTime     @map("expires_at") @db.Timestamptz
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz
 
   @@map("registry_locks")
+  @@schema("registry")
 }

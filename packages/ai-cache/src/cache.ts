@@ -37,15 +37,17 @@ export class AICache {
 
   async checkSemanticCache(embedding: number[], similarityThreshold: number = 0.85): Promise<any | null> {
     try {
-      // Prisma $queryRaw parameterization for vector is tricky.
-      // We format the array to a string representation '[1,2,3]'
-      const embeddingString = `[${embedding.join(',')}]`;
-      
+      // AUDIT-004: validate all elements are numbers before interpolation
+      if (!embedding.every(n => typeof n === 'number' && isFinite(n))) {
+        console.warn('[AICache] checkSemanticCache: invalid embedding values');
+        return null;
+      }
+      const embeddingLiteral = `[${embedding.join(',')}]`;
       const result = await prisma.$queryRaw`
         SELECT "inputHash", confidence,
-               1 - (embedding <=> ${embeddingString}::vector) AS similarity
+               1 - (embedding <=> ${embeddingLiteral}::vector) AS similarity
         FROM "analytics"."IntelligenceSnapshot"
-        WHERE 1 - (embedding <=> ${embeddingString}::vector) > ${similarityThreshold}
+        WHERE 1 - (embedding <=> ${embeddingLiteral}::vector) > ${similarityThreshold}
         ORDER BY similarity DESC
         LIMIT 1
       `;

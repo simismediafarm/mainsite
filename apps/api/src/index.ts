@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
 import * as prismaRuntimeUtils from '@prisma/client-runtime-utils'; // Force Vercel NFT to bundle this Prisma dependency
-console.log('[Prisma Runtime Load]', !!prismaRuntimeUtils); // Prevent tree-shaking
+import { logger, childLogger } from './logger';
+logger.debug({ prismaLoaded: !!prismaRuntimeUtils }, '[Prisma Runtime Load]'); // Prevent tree-shaking
 
 import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
-import { logger } from 'hono/logger';
 import { mvpRouter } from './routers/mvp';
 import { registryRouter } from './routers/registry';
 import { handle } from '@hono/node-server/vercel';
@@ -36,7 +36,7 @@ app.use('*', async (c, next) => {
   await next();
   const ms = Date.now() - start;
   
-  console.log(`[${c.req.method}] ${c.req.url} - ${c.res.status} - ${ms}ms [trace:${traceId}]`);
+  childLogger(traceId).info({ method: c.req.method, url: c.req.url, status: c.res.status, ms });
 });
 
 app.use('*', cors({
@@ -97,7 +97,7 @@ app.get('/health', async (c) => {
     await prisma.$queryRaw`SELECT 1`;
     return c.json({ status: 'ok', service: 'simis-mediafarm-api', db: 'connected', timestamp: new Date().toISOString() });
   } catch (error) {
-    console.error('[HealthCheck] DB Connection Failed:', error);
+    logger.error({ err: error }, '[HealthCheck] DB Connection Failed');
     return c.json({ status: 'error', service: 'simis-mediafarm-api', db: 'disconnected' }, 503);
   }
 });
@@ -114,14 +114,14 @@ const mountedPaths = app.routes.map(r => r.path);
 bootstrapKernel({ mountedRoutes: mountedPaths }).then(() => {
   startSentinelLoop();
 }).catch((err) => {
-  console.error('CRITICAL: SIK Bootstrap failed:', err);
+  logger.fatal({ err }, 'CRITICAL: SIK Bootstrap failed');
   if (!process.env.VERCEL) {
     process.exit(1);
   }
 });
 
 if (!process.env.VERCEL) {
-  console.log(`[API] Starting Hono SIMIS MediaFarm API on port ${port}...`);
+  logger.info({ port }, '[API] Starting Hono SIMIS MediaFarm API');
   serve({
     fetch: app.fetch,
     port,

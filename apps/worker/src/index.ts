@@ -1,8 +1,11 @@
 import { bootstrapWorkerKernel } from './kernel/bootstrap';
+import pino from 'pino';
+
+const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
 
 // SIK: Bootstrap Worker Invariant Kernel
 bootstrapWorkerKernel().catch(err => {
-  console.error('CRITICAL: Worker SIK Bootstrap failed:', err);
+  logger.fatal({ err }, 'CRITICAL: Worker SIK Bootstrap failed');
   process.exit(1);
 });
 
@@ -53,7 +56,7 @@ app.post('/qstash/consume', async (c) => {
       return c.json({ error: 'Invalid Upstash signature' }, 401);
     }
   } catch (error: any) {
-    console.error("Signature verification failed", error);
+    logger.error({ err: error }, 'Signature verification failed');
     return c.json({ error: 'Verification error', details: error.message }, 401);
   }
 
@@ -68,12 +71,12 @@ app.post('/qstash/consume', async (c) => {
   // Enforce Event Schema V4
   const parseResult = SimisEventSchemaV4.safeParse(jsonBody);
   if (!parseResult.success) {
-    console.error("Event Schema Validation Failed:", parseResult.error);
+    logger.error({ issues: parseResult.error }, 'Event Schema Validation Failed');
     return c.json({ error: 'Event schema mismatch', details: parseResult.error }, 400);
   }
 
   const event = parseResult.data;
-  console.log(`[Worker] Received verified event: ${event.type} (Trace ID: ${event.trace_id})`);
+  logger.info({ eventType: event.type, traceId: event.trace_id }, '[Worker] Received verified event');
 
   // ── PUSH TO BACKGROUND QUEUE (Avoid Render 100s Timeout) ──
   // Based on SIMIS V4 architecture, we route it to the AI_ENRICHMENT queue.
@@ -99,7 +102,7 @@ app.post('/internal/replay', async (c) => {
 });
 
 const port = parseInt(process.env.PORT || '3001', 10);
-console.log(`Worker is running on port ${port}`);
+logger.info({ port }, 'Worker is running');
 
 serve({
   fetch: app.fetch,

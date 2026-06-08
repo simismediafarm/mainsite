@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: simis-worker
+    runtime: node
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @simis/shared build && pnpm --filter @simis/config build && pnpm --filter @simis/database build && pnpm --filter @simis/ai-cache build && pnpm --filter @simis/ai-router build && pnpm --filter @simis/worker build
+    startCommand: node apps/worker/dist/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
+        sync: false
+      - key: REDIS_PASSWORD
+        sync: false
+      - key: QSTASH_CURRENT_SIGNING_KEY
+        sync: false
+      - key: QSTASH_NEXT_SIGNING_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false

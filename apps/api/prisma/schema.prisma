@@ -29,8 +29,14 @@ generator client_default {
   binaryTargets   = ["native", "rhel-openssl-3.0.x"]
 }
 
+// NOTE: Canonical schema is maintained in packages/database/prisma/schema.prisma
+// This file mirrors it for multi-target generator outputs (api, web, worker).
+// Any model changes MUST be made to packages/database/prisma/schema.prisma first.
+
 datasource db {
   provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
   schemas    = ["public", "registry", "entity", "attention", "analytics", "integration", "extensions"]
   extensions = [pgvector(map: "vector", schema: "extensions")]
 }

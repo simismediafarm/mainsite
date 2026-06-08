@@ -19,6 +19,11 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   );
 }
 
+// AUDIT-002: enforce minimum key length to prevent empty-string bypass
+if (process.env.SIMIS_OPS_KEY !== undefined && process.env.SIMIS_OPS_KEY.length < 32) {
+  throw new Error('[SIMIS API] FATAL: SIMIS_OPS_KEY must be at least 32 characters.');
+}
+
 /**
  * Hono middleware that validates a Supabase Bearer JWT on every request.
  *

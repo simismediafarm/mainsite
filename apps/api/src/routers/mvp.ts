@@ -92,33 +92,36 @@ app.post('/post', async (c) => {
 
     const excerpt = body.excerpt || (body.content.length > 160 ? body.content.slice(0, 160) + '...' : body.content);
 
-    const post = await prisma.post.create({
-      data: {
-        title: body.title,
-        content: body.content,
-        excerpt,
-        authorId: profile.id,
-        status: body.status || 'draft',
-        trustScore: body.trustScore ?? 80,
-        tags: {
-          connectOrCreate: (body.tags || []).map(t => ({
-            where: { name: t.trim() },
-            create: { name: t.trim() }
-          }))
+    // AUDIT-009: atomic post create + event log
+    const [post] = await prisma.$transaction(async (tx) => {
+      const created = await tx.post.create({
+        data: {
+          title: body.title,
+          content: body.content,
+          excerpt,
+          authorId: profile!.id,
+          status: body.status || 'draft',
+          trustScore: body.trustScore ?? 80,
+          tags: {
+            connectOrCreate: (body.tags || []).map(t => ({
+              where: { name: t.trim() },
+              create: { name: t.trim() }
+            }))
+          }
+        },
+        include: { author: true, tags: true }
+      });
+      await tx.eventQueueLog.create({
+        data: {
+          traceId: `trace_create_${created.id}`,
+          actor: 'system',
+          source: 'mvp_router',
+          eventType: 'CONTENT.CREATE',
+          payload: created as any,
+          status: 'COMPLETED'
         }
-      },
-      include: { author: true, tags: true }
-    });
-
-    await prisma.eventQueueLog.create({
-      data: {
-        traceId: `trace_create_${post.id}`,
-        actor: 'system',
-        source: 'mvp_router',
-        eventType: 'CONTENT.CREATE',
-        payload: post as any,
-        status: 'COMPLETED'
-      }
+      });
+      return [created];
     });
 
     eventBus.emitEvent({ type: 'post_created', payload: post as any });

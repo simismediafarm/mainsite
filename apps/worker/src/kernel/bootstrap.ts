@@ -1,27 +1,29 @@
+import pino from 'pino';
 import { SIMIS_QUEUE_NAMES } from '@simis/shared';
+
+const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
 
 /**
  * Worker-specific System Invariant Kernel (SIK) bootstrap.
  * Validates environment, database, and queue names at worker boot time.
  */
 export async function bootstrapWorkerKernel() {
-  console.log('🛡️ [SIK Worker] Bootstrapping Worker Invariant Kernel...');
+  logger.info('[SIK Worker] Bootstrapping Worker Invariant Kernel...');
 
   // 1. Env Invariant Check
-  const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
   if (!process.env.DATABASE_URL) {
-    console.error('[Env Invariant Failure] Missing DATABASE_URL environment variable.');
+    logger.fatal('[Env Invariant Failure] Missing DATABASE_URL environment variable.');
     process.exit(1);
   }
 
   const hasRedis = process.env.REDIS_URL || (process.env.REDIS_HOST && process.env.REDIS_PORT);
   if (!hasRedis) {
-    console.error('[Env Invariant Failure] Missing Redis configuration.');
+    logger.fatal('[Env Invariant Failure] Missing Redis configuration.');
     process.exit(1);
   }
 
   // 2. DB Invariant Check
-  const dbUrl = process.env.DATABASE_URL || '';
+  const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl.startsWith('postgres://') && !dbUrl.startsWith('postgresql://')) {
     throw new Error(`[DB Invariant Violation] Database connection protocol must be PostgreSQL. Got: "${dbUrl.split(':')[0]}"`);
   }
@@ -66,9 +68,9 @@ export async function bootstrapWorkerKernel() {
       });
     }
   } catch (e) {
-    console.warn('[SIK Worker] BullMQ constructor hook skipped.');
+    logger.warn('[SIK Worker] BullMQ constructor hook skipped.');
   }
 
-  console.log('🛡️ [SIK Worker] Worker Invariants Verified Successfully.');
+  logger.info('[SIK Worker] Worker Invariants Verified Successfully.');
 }
 export default bootstrapWorkerKernel;
