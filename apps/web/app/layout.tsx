@@ -1,5 +1,5 @@
 import './globals.css';
-import React from 'react';
+import type { ReactNode } from 'react';
 import { Inter, Source_Serif_4, JetBrains_Mono } from 'next/font/google';
 import TopBar from '../components/TopBar';
 import { ThemeProvider } from '../components/ThemeProvider';
@@ -29,7 +29,7 @@ export const metadata = {
 // Anti-FOUC: apply saved/system theme before first paint
 const themeScript = `(function(){try{var t=localStorage.getItem('theme')||((window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.setAttribute('data-theme',t);document.documentElement.classList.toggle('dark',t==='dark')}catch(e){}})()`;
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   let mainNavItems: { label: string; href: string; icon?: string }[] = [];
   let footerCopy = `© 2026 SIMIS Platform.`;
 
@@ -57,7 +57,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-        {/* Material Symbols: icon font, not a custom page font — safe in <head> */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
           rel="stylesheet"
