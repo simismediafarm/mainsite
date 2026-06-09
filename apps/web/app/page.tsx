@@ -107,10 +107,14 @@ export default async function HomePage() {
           </div>
         </section>
       ) : (
-        <section className="relative w-full h-[300px] border border-dashed border-[#222222] bg-[#121212]/50 flex items-center justify-center rounded-sm">
-          <div className="text-center font-mono text-xs text-[#bac9cc] flex flex-col items-center gap-2">
-            <span className="material-symbols-outlined text-2xl text-[#222222]">storage</span>
-            <div>No Hero Asset Discovered in Registry</div>
+        <section className="relative w-full h-[380px] border border-[#222222] bg-[#121212] flex items-center justify-center rounded-sm overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0a1628] to-[#131313]" />
+          <div className="relative text-center flex flex-col items-center gap-4 px-8">
+            <div className="text-5xl font-black text-[#e5e2e1] tracking-tight leading-none">SIMIS<br/><span className="text-[#00E5FF]">MediaFarm</span></div>
+            <p className="text-sm text-[#bac9cc] max-w-md leading-relaxed">Intelligence-driven content. Real-time signals. Editorial precision.</p>
+            <Link href="/create" className="mt-2 px-6 py-2 bg-[#00E5FF] text-[#050505] text-xs font-bold rounded-sm hover:bg-[#00daf3] transition-colors uppercase tracking-wider">
+              Start Writing →
+            </Link>
           </div>
         </section>
       )}
@@ -198,8 +202,11 @@ export default async function HomePage() {
               </article>
             ))
           ) : (
-            <div className="p-8 text-center border border-dashed border-[#222222] text-[#bac9cc] text-xs font-mono">
-               AWAITING CONTENT INGESTION PIPELINE
+            <div className="flex flex-col items-center gap-6 py-16 text-center">
+              <p className="text-[#bac9cc] text-sm">No stories yet. Be the first to publish.</p>
+              <Link href="/create" className="px-5 py-2 border border-[#00E5FF]/50 text-[#00E5FF] text-xs font-semibold rounded-sm hover:bg-[#00E5FF]/10 transition-colors">
+                Write a Story
+              </Link>
             </div>
           )}
         </div>
@@ -230,8 +237,16 @@ export default async function HomePage() {
 
           {/* Fallback Empty Widget if no top entities */}
           {topEntities.length === 0 && (
-            <div className="bg-[#121212] border border-dashed border-[#222222] p-4 rounded-sm text-center font-mono text-[10px] text-[#bac9cc]">
-              WIDGET REGISTRY EMPTY
+            <div className="bg-[#121212] border border-[#222222] p-4 rounded-sm">
+              <h3 className="font-mono text-[10px] tracking-wider text-[#bac9cc] font-bold mb-3 uppercase">Trending Topics</h3>
+              {(['Artificial Intelligence', 'Financial Markets', 'Climate Tech', 'Geopolitics', 'Health'].map((name, i) => (
+                <div key={name} className="flex justify-between items-center py-2 border-b border-[#1a1a1a] last:border-0">
+                  <span className="text-xs text-[#e5e2e1]">{name}</span>
+                  <div className="w-16 h-1 bg-[#222222] overflow-hidden rounded-full">
+                    <div className="h-full bg-[#00E5FF]/40" style={{ width: `${90 - i * 10}%` }} />
+                  </div>
+                </div>
+              )))}
             </div>
           )}
 

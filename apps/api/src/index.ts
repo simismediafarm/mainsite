@@ -12,6 +12,7 @@ import { designSystemRouter } from './routers/design-system';
 import { cronRouter } from './routers/cron';
 import { adminRouter } from './routers/admin/index';
 import v2Router from './routers/v2';
+import opsRouter from './routers/ops';
 import kernelRouter from './routers/kernel';
 import { authMiddleware, adminAuthMiddleware } from './middleware/auth';
 import { honoSikMiddleware } from './kernel/guards/event.invariant';
@@ -65,6 +66,7 @@ app.route('/api/v1/registry', registryRouter);
 app.route('/api/v1/design-system', designSystemRouter);
 app.route('/api/admin', adminRouter);
 app.route('/api/v2', v2Router);
+app.route('/api/v2/ops', opsRouter);
 app.route('/api/kernel', kernelRouter);
 app.route('/api/cron', cronRouter);
 
