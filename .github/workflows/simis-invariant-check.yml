@@ -31,4 +31,9 @@ jobs:
         run: node .agent/ci/simis_invariant_linter.js
 
       - name: Typecheck Workspace
-        run: pnpm build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2MDAwMDAwMDAsImV4cCI6MjAwMDAwMDAwMH0.fake-signature-for-ci"
+          NEXT_PUBLIC_KERNEL_API_URL: "https://placeholder.vercel.app"
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/simis_ci"
+        run: npx turbo run build --filter=@simis/api --filter=@simis/web

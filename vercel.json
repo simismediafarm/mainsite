@@ -1,15 +1,11 @@
 {
-  "buildCommand": "npx turbo run build --filter=@simis/api",
-  "outputDirectory": "apps/api/dist",
+  "buildCommand": "npx turbo run build --filter=@simis/web",
+  "outputDirectory": "apps/web/.next",
+  "framework": "nextjs",
   "rewrites": [
     {
-      "source": "/(.*)",
-      "destination": "/api"
+      "source": "/api/:path*",
+      "destination": "https://mainsite-api.vercel.app/api/:path*"
     }
-  ],
-  "functions": {
-    "api/**/*.ts": {
-      "includeFiles": "node_modules/.prisma/**"
-    }
-  }
+  ]
 }

@@ -2,6 +2,7 @@
   "installCommand": "cd ../.. && pnpm install",
   "buildCommand": "cd ../.. && npx turbo run build --filter=@simis/api",
   "framework": null,
+  "outputDirectory": "api",
   "rewrites": [
     {
       "source": "/(.*)",

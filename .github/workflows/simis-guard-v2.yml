@@ -125,11 +125,13 @@ jobs:
       # -------------------------------
       # 🧪 BUILD VALIDATION
       # -------------------------------
-      - name: Build API
-        run: pnpm --filter @simis/api run build
-
-      - name: Build Web
-        run: pnpm --filter @simis/web run build
+      - name: Build API + Web (turbo — builds workspace deps first)
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2MDAwMDAwMDAsImV4cCI6MjAwMDAwMDAwMH0.fake-signature-for-ci"
+          NEXT_PUBLIC_KERNEL_API_URL: "https://placeholder.vercel.app"
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/simis_ci"
+        run: npx turbo run build --filter=@simis/api --filter=@simis/web
 
       # -------------------------------
       # 🚀 RUNTIME EMULATION GATE
@@ -144,7 +146,6 @@ jobs:
           UPSTASH_REDIS_REST_TOKEN: "fake-token-for-ci"
           REDIS_URL: "redis://localhost:6379"
           PORT: "4000"
-          VERCEL: "1"
         run: |
           echo "Running API cold start emulation..."
           timeout 10 node apps/api/dist/index.js &

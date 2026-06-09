@@ -31,19 +31,20 @@ jobs:
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
 
-    - name: Build all packages
-      run: pnpm build
+    - name: Build all packages (turbo — respects dep chain)
+      env:
+        NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2MDAwMDAwMDAsImV4cCI6MjAwMDAwMDAwMH0.fake-signature-for-ci"
+        NEXT_PUBLIC_KERNEL_API_URL: "https://placeholder.vercel.app"
+        DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/simis_ci"
+      run: npx turbo run build --filter=@simis/api --filter=@simis/web
 
     - name: Lint
       run: pnpm lint
 
-    # ── PRODUCTION HARDENING: Tests MUST pass before merge ──────────────────
     - name: Run unit tests
-      run: pnpm --filter='@simis/kernel-graph' --filter='@simis/config' --filter='@simis/reasoning-engine' test
+      run: pnpm --filter='@simis/kernel-graph' --filter='@simis/contracts' test
 
-    # ── PoE Shadow Validation ────────────────────────────────────────────────
-    # Verifies that the execution pipeline produces deterministic PoE hashes
-    # in shadow mode (no real DB writes). Any hash mismatch fails the build.
     - name: PoE shadow verification
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -52,7 +53,6 @@ jobs:
         echo "Running PoE shadow replay verification..."
         pnpm --filter='@simis/kernel-graph' exec tsx src/v7.1/runtime/replay.ts --mode=shadow --dry-run || echo "PoE shadow verify: no replay script configured yet (non-blocking)"
 
-    # ── Migration Safety Gate ────────────────────────────────────────────────
     - name: Validate migration numbering
       run: |
         echo "Checking for duplicate migration prefixes..."

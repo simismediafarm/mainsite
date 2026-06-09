@@ -1,5 +1,10 @@
 import type { MetadataRoute } from 'next';
-import { API_BASE } from '../lib/kernel-api';
+
+export const dynamic = 'force-dynamic';
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_KERNEL_API_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://127.0.0.1:4000');
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://mediafarm.vercel.app';
@@ -29,7 +34,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     // Fetch dynamic content slugs
     // We use 127.0.0.1 to avoid IPv6 DNS issues in Node fetch
-    const res = await fetch(`${process.env.NEXT_PUBLIC_KERNEL_API_URL || (process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : 'http://127.0.0.1:4000')}/api/mvp/feed`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/api/mvp/feed`, { cache: 'no-store' });
     const data = await res.json();
     
     if (data.posts) {

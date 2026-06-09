@@ -51,8 +51,13 @@ jobs:
       - name: Contract Runtime Validation
         run: pnpm --filter @simis/contracts test
 
-      - name: Build Check
-        run: pnpm build
+      - name: Build Check (turbo — builds deps before apps)
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2MDAwMDAwMDAsImV4cCI6MjAwMDAwMDAwMH0.fake-signature-for-ci"
+          NEXT_PUBLIC_KERNEL_API_URL: "https://placeholder.vercel.app"
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/simis_ci"
+        run: npx turbo run build --filter=@simis/api --filter=@simis/web
 
       - name: Runtime Smoke Test
         env:
@@ -63,8 +68,8 @@ jobs:
           UPSTASH_REDIS_REST_TOKEN: "fake"
           OPENAI_API_KEY: "fake"
           REDIS_URL: "redis://localhost:6379"
-          PORT: "3000"
+          PORT: "4000"
         run: |
           node apps/api/dist/index.js &
           sleep 5
-          curl http://localhost:3000/health || exit 1
+          curl http://localhost:4000/health || exit 1

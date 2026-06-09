@@ -1,72 +1,43 @@
-import { API_BASE } from './kernel-api';
-
 /**
- * registryClient.ts
- * Utility to fetch configuration from SIMIS Core Registries.
- * Can be used in Next.js Server Components.
+ * registryClient.ts — Server-side registry fetcher for SIMIS Core Registries.
+ * Uses NEXT_PUBLIC_KERNEL_API_URL (must be set in Vercel env vars).
  */
 
-async function fetchRegistry(endpoint: string, options: RequestInit = {}) {
-  // We use ISR / Cache by default for registries as they don't change often
-  const defaultOptions: RequestInit = { next: { revalidate: 60 } };
-  
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...defaultOptions,
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
+// Resolve at call time (not import time) so it works in both SSR and edge
+function getApiBase() {
+  return (
+    process.env.NEXT_PUBLIC_KERNEL_API_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+  );
+}
 
-  if (!response.ok) {
-    console.error(`Failed to fetch registry ${endpoint}: ${response.status}`);
+async function fetchRegistry(endpoint: string): Promise<any | null> {
+  const base = getApiBase();
+  if (!base) return null; // build-time: no API available, render defaults
+
+  try {
+    const response = await fetch(`${base}${endpoint}`, {
+      next: { revalidate: 60 },
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) return null;
+    return response.json();
+  } catch {
     return null;
   }
-
-  return response.json();
 }
 
 export class RegistryClient {
-  async getNavigation() {
-    return fetchRegistry('/api/v1/registry/navigation');
-  }
-
-  async getNavigationByKey(key: string) {
-    return fetchRegistry(`/api/v1/registry/navigation/${key}`);
-  }
-
-  async getTaxonomy() {
-    return fetchRegistry('/api/v1/registry/taxonomy');
-  }
-
-  async getWidgets() {
-    return fetchRegistry('/api/v1/registry/widgets');
-  }
-
-  async getWidgetByKey(key: string) {
-    return fetchRegistry(`/api/v1/registry/widgets/${key}`);
-  }
-
-  async getPages() {
-    return fetchRegistry('/api/v1/registry/pages');
-  }
-
-  async getPageBySlug(slug: string) {
-    return fetchRegistry(`/api/v1/registry/pages/${slug}`);
-  }
-
-  async getRoutes() {
-    return fetchRegistry('/api/v1/registry/routes');
-  }
-
-  async getRouteByPath(path: string) {
-    return fetchRegistry(`/api/v1/registry/routes/${path}`);
-  }
-
-  async getFeatures() {
-    return fetchRegistry('/api/v1/registry/features');
-  }
+  getNavigation() { return fetchRegistry('/api/v1/registry/navigation'); }
+  getNavigationByKey(key: string) { return fetchRegistry(`/api/v1/registry/navigation/${key}`); }
+  getTaxonomy() { return fetchRegistry('/api/v1/registry/taxonomy'); }
+  getWidgets() { return fetchRegistry('/api/v1/registry/widgets'); }
+  getWidgetByKey(key: string) { return fetchRegistry(`/api/v1/registry/widgets/${key}`); }
+  getPages() { return fetchRegistry('/api/v1/registry/pages'); }
+  getPageBySlug(slug: string) { return fetchRegistry(`/api/v1/registry/pages/${slug}`); }
+  getRoutes() { return fetchRegistry('/api/v1/registry/routes'); }
+  getRouteByPath(path: string) { return fetchRegistry(`/api/v1/registry/routes/${path}`); }
+  getFeatures() { return fetchRegistry('/api/v1/registry/features'); }
 }
 
 export const registry = new RegistryClient();
