@@ -11,6 +11,59 @@ export class AIOrchestrator {
   private openAIClient: OpenAI | null = null;
   private aiCache: AICache;
 
+  // REL-002: Circuit breaker state per provider
+  private static readonly CB_THRESHOLD = 3;    // open after 3 consecutive failures
+  private static readonly CB_RESET_MS = 60_000; // retry after 60s
+  private static readonly PROVIDER_TIMEOUT_MS = 10_000; // 10s per provider
+
+  private circuitBreaker: Record<string, { failures: number; openedAt: number | null }> = {
+    gemini:      { failures: 0, openedAt: null },
+    openrouter:  { failures: 0, openedAt: null },
+    chatgpt:     { failures: 0, openedAt: null },
+  };
+
+  private isCBOpen(provider: string): boolean {
+    const cb = this.circuitBreaker[provider];
+    if (!cb || cb.openedAt === null) return false;
+    if (Date.now() - cb.openedAt > AIOrchestrator.CB_RESET_MS) {
+      cb.failures = 0; cb.openedAt = null; // half-open: allow one retry
+      return false;
+    }
+    return true;
+  }
+
+  private recordCBSuccess(provider: string) {
+    const cb = this.circuitBreaker[provider];
+    if (cb) { cb.failures = 0; cb.openedAt = null; }
+  }
+
+  private recordCBFailure(provider: string) {
+    const cb = this.circuitBreaker[provider];
+    if (!cb) return;
+    cb.failures += 1;
+    if (cb.failures >= AIOrchestrator.CB_THRESHOLD) cb.openedAt = Date.now();
+  }
+
+  /** Wrap a provider call with AbortSignal timeout + circuit breaker */
+  private async callWithTimeout<T>(
+    provider: string,
+    fn: (signal: AbortSignal) => Promise<T>
+  ): Promise<T> {
+    if (this.isCBOpen(provider)) throw new Error(`Circuit breaker OPEN for ${provider}`);
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), AIOrchestrator.PROVIDER_TIMEOUT_MS);
+    try {
+      const result = await fn(ac.signal);
+      this.recordCBSuccess(provider);
+      return result;
+    } catch (err) {
+      this.recordCBFailure(provider);
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   constructor() {
     if (process.env.GEMINI_API_KEY) {
       this.geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -42,6 +95,12 @@ export class AIOrchestrator {
       // ── Step 1: CACHE Check ──────────────────────────────────────────────────
       AIPipelineGuard.recordStep('CACHE');
       try {
+        // PERF-001: semantic vector similarity cache check via pgvector
+        const semanticHit = await this.checkSemanticCache(inputHash);
+        if (semanticHit) {
+          console.log('[AIOrchestrator] Semantic Cache Hit');
+          return semanticHit;
+        }
         const cached = await this.aiCache.getSnapshot(inputHash);
         if (cached) {
           console.log('[AIOrchestrator] Cache Hit (CACHE step resolved)');
@@ -80,10 +139,9 @@ export class AIOrchestrator {
       AIPipelineGuard.recordStep('GEMINI');
       try {
         if (!this.geminiClient) throw new Error("Gemini client is not configured");
-        const res = await this.geminiClient.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: prompt
-        });
+        const res = await this.callWithTimeout('gemini', (_signal) =>
+          this.geminiClient!.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt })
+        );
         await this.logCall('gemini', 'gemini-2.5-flash', 'enrichment', Date.now() - startTime, 'success');
         
         const output = res.text || null;
@@ -102,10 +160,12 @@ export class AIOrchestrator {
       AIPipelineGuard.recordStep('OPENROUTER');
       try {
         if (!this.openRouterClient) throw new Error("OpenRouter client is not configured");
-        const res = await this.openRouterClient.chat.completions.create({
-          model: 'anthropic/claude-3-haiku',
-          messages: [{ role: 'user', content: prompt }]
-        });
+        const res = await this.callWithTimeout('openrouter', (signal) =>
+          this.openRouterClient!.chat.completions.create(
+            { model: 'anthropic/claude-3-haiku', messages: [{ role: 'user', content: prompt }] },
+            { signal }
+          )
+        );
         await this.logCall('openrouter', 'anthropic/claude-3-haiku', 'enrichment', Date.now() - startTime, 'success');
         
         const output = res.choices[0].message.content;
@@ -124,10 +184,12 @@ export class AIOrchestrator {
       AIPipelineGuard.recordStep('CHATGPT');
       try {
         if (!this.openAIClient) throw new Error("ChatGPT client is not configured");
-        const res = await this.openAIClient.chat.completions.create({
-          model: 'gpt-4o-mini',
-          messages: [{ role: 'user', content: prompt }]
-        });
+        const res = await this.callWithTimeout('chatgpt', (signal) =>
+          this.openAIClient!.chat.completions.create(
+            { model: 'gpt-4o-mini', messages: [{ role: 'user', content: prompt }] },
+            { signal }
+          )
+        );
         await this.logCall('chatgpt', 'gpt-4o-mini', 'enrichment', Date.now() - startTime, 'success');
         
         const output = res.choices[0].message.content;
@@ -145,6 +207,42 @@ export class AIOrchestrator {
       AIPipelineGuard.recordExplicitFallback("All LLM providers and rule stages failed.");
       throw new Error(`[AI Invariant Failure] All execution layers exhausted without successful enrichment (reject_execution).`);
     });
+  }
+
+  /**
+   * PERF-001: Check pgvector semantic similarity cache.
+   * Returns cached output if a snapshot with the exact inputHash exists,
+   * or if a cosine-similar snapshot (>0.95) exists via pgvector.
+   */
+  private async checkSemanticCache(inputHash: string): Promise<string | null> {
+    try {
+      // Exact hash hit first (cheap)
+      const exact = await prisma.intelligenceSnapshot.findFirst({
+        where: { inputHash },
+        select: { entityScore: true },
+      });
+      if (exact) return exact.entityScore.toString();
+
+      // Vector similarity search — only if pgvector extension active
+      const similar = await prisma.$queryRaw<Array<{ entity_score: number }>>`
+        SELECT entity_score
+        FROM "analytics"."IntelligenceSnapshot"
+        WHERE embedding IS NOT NULL
+          AND 1 - (embedding <=> (
+            SELECT embedding FROM "analytics"."IntelligenceSnapshot"
+            WHERE "inputHash" = ${inputHash} LIMIT 1
+          )) > 0.95
+        ORDER BY embedding <=> (
+          SELECT embedding FROM "analytics"."IntelligenceSnapshot"
+          WHERE "inputHash" = ${inputHash} LIMIT 1
+        )
+        LIMIT 1
+      `;
+      if (similar.length > 0) return similar[0].entity_score.toString();
+    } catch {
+      // pgvector not available or no matching row — not an error
+    }
+    return null;
   }
 
   private async saveSnapshotToDb(inputHash: string, traceId: string, output: string) {

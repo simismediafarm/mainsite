@@ -90,15 +90,14 @@ function evaluatePolicy(role: string, commandType: string): boolean {
 }
 
 async function emitSecurityEvent(traceId: string, actor: string, source: string, eventType: string, payload: any) {
-  // await prisma.securityEventLog.create({
-  //   data: {
-  //     traceId,
-  //     actor,
-  //     source,
-  //     eventType,
-  //     payload,
-  //     timestamp: Date.now()
-  //   }
-  // });
-  console.log(`[SecurityEvent] ${eventType}`, payload);
+  await prisma.securityEventLog.create({
+    data: {
+      traceId,
+      actor,
+      source,
+      eventType,
+      payload,
+      timestamp: BigInt(Date.now())
+    }
+  });
 }

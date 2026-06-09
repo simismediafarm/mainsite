@@ -28,7 +28,8 @@
     "overrides": {
       "uuid": "^9.0.1",
       "typescript": "^5.4.0",
-      "ioredis": "^5.11.0"
+      "ioredis": "^5.11.0",
+      "@types/node": "^20.19.0"
     }
   }
 }

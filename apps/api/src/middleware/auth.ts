@@ -24,6 +24,22 @@ if (process.env.SIMIS_OPS_KEY !== undefined && process.env.SIMIS_OPS_KEY.length 
   throw new Error('[SIMIS API] FATAL: SIMIS_OPS_KEY must be at least 32 characters.');
 }
 
+// SEC-003: ops key is only valid for internal/worker operation types, not admin UI routes
+const OPS_KEY_ALLOWED_PATHS = [
+  '/kernel/',
+  '/cron/',
+  '/internal/',
+  '/admin/dlq',
+  '/admin/metrics',
+  '/admin/trace',
+  '/v2/registry',
+  '/v2/intelligence',
+];
+
+function isOpsKeyAllowedPath(path: string): boolean {
+  return OPS_KEY_ALLOWED_PATHS.some(allowed => path.startsWith(allowed));
+}
+
 /**
  * Hono middleware that validates a Supabase Bearer JWT on every request.
  *
@@ -36,8 +52,11 @@ export async function authMiddleware(c: Context, next: Next) {
   const opsKey = c.req.header('X-SIMIS-OPS-KEY');
 
   if (opsKey && process.env.SIMIS_OPS_KEY && opsKey === process.env.SIMIS_OPS_KEY) {
-    // CLI or Bot with valid ops key bypasses JWT check
-    return await next();
+    // SEC-003: ops key bypass is scoped to internal/worker paths only
+    if (isOpsKeyAllowedPath(c.req.path)) {
+      return await next();
+    }
+    // Fall through to normal JWT auth for disallowed paths
   }
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -68,8 +87,11 @@ export async function adminAuthMiddleware(c: Context, next: Next) {
   const opsKey = c.req.header('X-SIMIS-OPS-KEY');
 
   if (opsKey && process.env.SIMIS_OPS_KEY && opsKey === process.env.SIMIS_OPS_KEY) {
-    // CLI or Bot with valid ops key bypasses admin role check
-    return await next();
+    // SEC-003: ops key bypass scoped to internal/worker paths only
+    if (isOpsKeyAllowedPath(c.req.path)) {
+      return await next();
+    }
+    // Fall through to role check for non-whitelisted paths
   }
 
   const user = c.get('user');
