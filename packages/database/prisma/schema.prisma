@@ -58,7 +58,6 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
-  @@index([userId])
   @@schema("public")
 }
 
@@ -69,7 +68,6 @@ model Session {
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
   @@schema("public")
 }
 
@@ -134,7 +132,6 @@ model WorkspaceMember {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, userId])
-  @@index([userId])
   @@schema("public")
 }
 
@@ -149,7 +146,6 @@ model Publication {
   members   PublicationMember[]
   posts     Post[]
 
-  @@index([workspaceId])
   @@schema("public")
 }
 
@@ -163,7 +159,6 @@ model PublicationMember {
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([publicationId, userId])
-  @@index([userId])
   @@schema("public")
 }
 
@@ -214,8 +209,6 @@ model Post {
   affiliateLinks     AffiliateLink[]
   metrics            ContentMetric?
 
-  @@index([authorId])
-  @@index([publicationId])
   @@schema("public")
 }
 
@@ -240,7 +233,6 @@ model AdEvent {
 
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
-  @@index([postId])
   @@schema("analytics")
 }
 
@@ -315,7 +307,6 @@ model ClusterMembership {
   cluster TopicCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
 
   @@unique([postId, clusterId])
-  @@index([clusterId])
   @@schema("public")
 }
 

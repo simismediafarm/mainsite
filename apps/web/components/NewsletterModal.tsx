@@ -1,27 +1,85 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import { apiClient } from '../lib/api-client';
 
 export default function NewsletterModal() {
   const [showNewsletter, setShowNewsletter] = useState(false);
+  const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Show newsletter modal after 5 seconds
     const timer = setTimeout(() => setShowNewsletter(true), 5000);
     return () => clearTimeout(timer);
   }, []);
 
+  const validateEmail = (value: string) => {
+    if (!value.trim()) return 'Email is required.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Enter a valid email address.';
+    return '';
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const err = validateEmail(email);
+    if (err) {
+      setEmailError(err);
+      return;
+    }
+    setEmailError('');
+    setLoading(true);
+    try {
+      await apiClient.subscribeNewsletter(email);
+      toast.success('Subscribed! Check your inbox.');
+      setShowNewsletter(false);
+    } catch {
+      toast.error('Subscription failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!showNewsletter) return null;
 
   return (
-    <div style={homeStyles.newsletterModal}>
+    <div role="dialog" aria-modal="true" aria-label="Newsletter signup" style={homeStyles.newsletterModal}>
       <div className="glass-container" style={homeStyles.newsletterContent}>
-        <button style={homeStyles.closeBtn} onClick={() => setShowNewsletter(false)}>✕</button>
-        <h3 style={{marginTop: 0}}>Never Miss a Tech Deal!</h3>
-        <p style={{fontSize: '14px', color: 'var(--text-secondary)'}}>Get curated programmatic price drops and AI-summarized tech reviews directly to your inbox.</p>
-        <form style={{display: 'flex', gap: '8px', marginTop: '16px'}}>
-          <input type="email" placeholder="Your best email" style={homeStyles.input} required />
-          <button type="submit" style={homeStyles.submitBtn}>Subscribe</button>
+        <button
+          style={homeStyles.closeBtn}
+          onClick={() => setShowNewsletter(false)}
+          aria-label="Close newsletter modal"
+        >
+          ✕
+        </button>
+        <h3 style={{ marginTop: 0 }}>Never Miss a Tech Deal!</h3>
+        <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+          Get curated programmatic price drops and AI-summarized tech reviews directly to your inbox.
+        </p>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }} noValidate>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              type="email"
+              placeholder="Your best email"
+              style={homeStyles.input}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              aria-label="Email address"
+              aria-required="true"
+              aria-invalid={!!emailError}
+              aria-describedby={emailError ? 'newsletter-email-error' : undefined}
+              disabled={loading}
+            />
+            <button type="submit" style={homeStyles.submitBtn} disabled={loading} aria-busy={loading}>
+              {loading ? '...' : 'Subscribe'}
+            </button>
+          </div>
+          {emailError && (
+            <span id="newsletter-email-error" role="alert" style={{ color: 'hsl(0,70%,55%)', fontSize: '12px' }}>
+              {emailError}
+            </span>
+          )}
         </form>
       </div>
     </div>
@@ -70,5 +128,5 @@ const homeStyles: Record<string, React.CSSProperties> = {
     borderRadius: 'var(--radius-sm)',
     fontWeight: 600,
     cursor: 'pointer',
-  }
+  },
 };

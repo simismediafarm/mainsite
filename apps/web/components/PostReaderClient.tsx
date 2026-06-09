@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { Post, SSEEvent } from '@simis/shared';
 import MarkdownRenderer from './MarkdownRenderer';
 import { useEventSourceFeed } from '../lib/sse';
-import { ThumbsUp, Eye, Share2, Award, Calendar, Clock } from 'lucide-react';
+import { ThumbsUp, Eye, Share2, Award, Clock } from 'lucide-react';
+import { toast } from 'sonner';
+import { apiClient } from '../lib/api-client';
 
 interface PostReaderClientProps {
   initialPost: Post;
@@ -20,7 +22,9 @@ export default function PostReaderClient({ initialPost, initialMonetization }: P
   const [scrollProgress, setScrollProgress] = useState(0);
   const [copied, setCopied] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
-  const [auctionResults, setAuctionResults] = useState<any[]>([]);
+  const [auctionResults, setAuctionResults] = useState<Array<{ slot: string; winningBidder: string; winningBidValue: number }>>([]);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterLoading, setNewsletterLoading] = useState(false);
 
   // Scroll Progress logic
   useEffect(() => {
@@ -40,28 +44,27 @@ export default function PostReaderClient({ initialPost, initialMonetization }: P
     let viewed = false;
     if (!viewed) {
       viewed = true;
-      fetch(`/api/mvp/post/${post.id}/view`, { method: 'POST' }).catch(console.error);
+      apiClient.viewPost(post.id);
     }
 
-    // Run V1.1 Ad Auction Simulation
+    // Run Ad Auction
     if (initialMonetization?.allowedSlots?.length) {
-      fetch('/api/mvp/ads/auction/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId: post.id, slots: initialMonetization.allowedSlots })
-      }).then(res => res.json())
-        .then(data => {
+      apiClient.runAuction(post.id, initialMonetization.allowedSlots)
+        .then((data) => {
           if (data.results) setAuctionResults(data.results);
-        }).catch(console.error);
+        })
+        .catch((err: unknown) => {
+          console.error('Ad auction failed:', err);
+        });
     }
   }, [post.id, initialMonetization]);
 
   const handleAdClick = async (slot: string) => {
     try {
-      await fetch(`/api/mvp/ads/click/${post.id}`, { method: 'POST' });
+      await apiClient.recordAdClick(post.id);
       console.log(`[Simulation] Ad click recorded for slot: ${slot}`);
     } catch (err) {
-      console.error(err);
+      console.error('Ad click failed:', err);
     }
   };
 
@@ -83,21 +86,25 @@ export default function PostReaderClient({ initialPost, initialMonetization }: P
 
   // Subscribe to real-time updates for likes or post deletes
   useEventSourceFeed((event: SSEEvent) => {
-    if (event.type === 'like_updated') {
-      const { id, likes } = event.payload as { id: string; likes: number };
-      if (id === post.id) {
-        setPost((prev) => ({ ...prev, likes }));
+    try {
+      if (event.type === 'like_updated') {
+        const { id, likes } = event.payload as { id: string; likes: number };
+        if (id === post.id) {
+          setPost((prev) => ({ ...prev, likes }));
+        }
+      } else if (event.type === 'post_updated') {
+        const updated = event.payload as Post;
+        if (updated.id === post.id) {
+          setPost((prev) => ({ ...prev, ...updated }));
+        }
+      } else if (event.type === 'post_viewed') {
+        const { id, views } = event.payload as { id: string; views: number };
+        if (id === post.id) {
+          setPost((prev) => ({ ...prev, views }));
+        }
       }
-    } else if (event.type === 'post_updated') {
-      const updated = event.payload as Post;
-      if (updated.id === post.id) {
-        setPost((prev) => ({ ...prev, ...updated }));
-      }
-    } else if (event.type === 'post_viewed') {
-      const { id, views } = event.payload as { id: string; views: number };
-      if (id === post.id) {
-        setPost((prev) => ({ ...prev, views }));
-      }
+    } catch (err) {
+      console.error('SSE event handling failed:', err);
     }
   });
 
@@ -105,13 +112,11 @@ export default function PostReaderClient({ initialPost, initialMonetization }: P
     if (isLiking) return;
     setIsLiking(true);
     try {
-      const res = await fetch(`/api/mvp/post/${post.id}/like`, { method: 'POST' });
-      if (res.ok) {
-        const data = await res.json();
-        setPost((prev) => ({ ...prev, likes: data.post.likes }));
-      }
+      const data = await apiClient.likePost(post.id);
+      setPost((prev) => ({ ...prev, likes: data.post.likes }));
     } catch (err) {
       console.error('Failed to like post:', err);
+      toast.error('Failed to like post');
     } finally {
       setIsLiking(false);
     }
@@ -122,6 +127,25 @@ export default function PostReaderClient({ initialPost, initialMonetization }: P
       navigator.clipboard.writeText(window.location.href);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const emailTrimmed = newsletterEmail.trim();
+    if (!emailTrimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+      toast.error('Enter a valid email address.');
+      return;
+    }
+    setNewsletterLoading(true);
+    try {
+      await apiClient.subscribeNewsletter(emailTrimmed);
+      toast.success('Subscribed!');
+      setNewsletterEmail('');
+    } catch {
+      toast.error('Subscription failed. Please try again.');
+    } finally {
+      setNewsletterLoading(false);
     }
   };
 
@@ -224,41 +248,7 @@ export default function PostReaderClient({ initialPost, initialMonetization }: P
 
           <MarkdownRenderer content={post.content} />
 
-          {/* In-Article Affiliate block */}
-          <div className="my-10 border border-[#222222] bg-[#0e0e0e] overflow-hidden rounded-sm group">
-            <div className="flex flex-col md:flex-row">
-              <div className="w-full md:w-1/3 bg-[#121212] p-4 flex items-center justify-center">
-                <img alt="Product" className="max-h-40 group-hover:scale-103 transition-transform duration-500 rounded" src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400&auto=format&fit=crop" />
-              </div>
-              <div className="flex-1 p-6 flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-sm font-bold text-[#e5e2e1]">Matrix Operator Audio v4</h3>
-                    <div className="flex text-[#fec931] items-center">
-                      <span className="material-symbols-outlined text-xs">star</span>
-                      <span className="material-symbols-outlined text-xs">star</span>
-                      <span className="material-symbols-outlined text-xs">star</span>
-                      <span className="material-symbols-outlined text-xs">star</span>
-                      <span className="material-symbols-outlined text-xs">star_half</span>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mb-4 text-[10px]">
-                    <ul className="space-y-1 text-[#32D74B] font-mono">
-                      <li className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">check</span> Low Latency API</li>
-                      <li className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">check</span> Ergonomic Sound</li>
-                    </ul>
-                    <ul className="space-y-1 text-[#bac9cc] font-mono">
-                      <li className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">close</span> Premium Cost</li>
-                    </ul>
-                  </div>
-                </div>
-                <button className="w-full py-2 bg-[#00E5FF] text-[#050505] font-bold text-xs rounded hover:bg-[#00daf3] transition-colors flex items-center justify-center gap-1.5 uppercase tracking-wider">
-                  Check Price on Operator Protocol
-                  <span className="material-symbols-outlined text-xs font-bold">open_in_new</span>
-                </button>
-              </div>
-            </div>
-          </div>
+          {/* Affiliate block: rendered only when data is available from monetization API */}
 
           {initialMonetization?.allowedSlots.includes('mid_article') && (
             getAdForSlot('mid_article')
@@ -326,11 +316,14 @@ export default function PostReaderClient({ initialPost, initialMonetization }: P
               <p className="text-xs text-[#bac9cc] leading-relaxed mb-4">{post.author.bio || 'Contributing author to the SIMIS MediaFarm editorial network.'}</p>
               {post.tags && post.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {post.tags.slice(0, 4).map((tag: any, i: number) => (
-                    <span key={i} className="px-2.5 py-1 bg-[#1c1b1b] text-[#e5e2e1] text-[9px] font-mono border border-[#222222] rounded uppercase tracking-wider">
-                      {typeof tag === 'string' ? tag : tag.name}
-                    </span>
-                  ))}
+                  {post.tags.slice(0, 4).map((tag: string | { name: string }) => {
+                    const tagName = typeof tag === 'string' ? tag : tag.name;
+                    return (
+                      <span key={tagName} className="px-2.5 py-1 bg-[#1c1b1b] text-[#e5e2e1] text-[9px] font-mono border border-[#222222] rounded uppercase tracking-wider">
+                        {tagName}
+                      </span>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -345,8 +338,25 @@ export default function PostReaderClient({ initialPost, initialMonetization }: P
             <span className="material-symbols-outlined text-[#00E5FF] mb-2 text-xl">mail</span>
             <h4 className="text-xs font-bold text-[#e5e2e1] mb-1.5">Dispatch</h4>
             <p className="text-[10px] text-[#bac9cc] leading-normal mb-3">Weekly protocol updates for Sovereign Operators.</p>
-            <input className="w-full bg-[#050505] border border-[#222222] rounded px-2.5 py-1.5 text-[10px] text-[#e5e2e1] mb-2 focus:border-[#00E5FF] outline-none text-center placeholder-[#bac9cc]/30" placeholder="operator@simis.net" type="email"/>
-            <button className="w-full py-1.5 bg-[#00E5FF] text-[#050505] font-bold text-[9px] rounded-sm uppercase tracking-wider">Execute Sync</button>
+            <form onSubmit={handleNewsletterSubmit} noValidate>
+              <input
+                className="w-full bg-[#050505] border border-[#222222] rounded px-2.5 py-1.5 text-[10px] text-[#e5e2e1] mb-2 focus:border-[#00E5FF] outline-none text-center placeholder-[#bac9cc]/30"
+                placeholder="operator@simis.net"
+                type="email"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+                aria-label="Email address for newsletter"
+                disabled={newsletterLoading}
+              />
+              <button
+                type="submit"
+                className="w-full py-1.5 bg-[#00E5FF] text-[#050505] font-bold text-[9px] rounded-sm uppercase tracking-wider disabled:opacity-50"
+                disabled={newsletterLoading}
+                aria-busy={newsletterLoading}
+              >
+                {newsletterLoading ? '...' : 'Execute Sync'}
+              </button>
+            </form>
           </div>
           <div className="flex flex-col gap-4">
             <span className="font-mono text-[9px] tracking-wider text-[#849396] uppercase">Next Entry</span>

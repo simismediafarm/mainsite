@@ -92,6 +92,7 @@ export default function AdminSidebar() {
                   <li key={item.href}>
                     <Link
                       href={item.href}
+                      aria-current={isActive ? 'page' : undefined}
                       className={`flex items-center gap-2.5 px-3 py-2 rounded text-xs transition-colors ${
                         isActive
                           ? 'bg-[#1e2a2a] text-[#00E5FF] font-semibold'

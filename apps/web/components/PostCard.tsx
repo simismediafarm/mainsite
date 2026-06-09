@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { ThumbsUp, Eye } from 'lucide-react';
 import { Post } from '@simis/shared';
+import { toast } from 'sonner';
+import { apiClient } from '../lib/api-client';
 
 interface PostCardProps {
   post: Post;
@@ -21,16 +23,12 @@ export default function PostCard({ post, onLikeUpdate }: PostCardProps) {
 
     setIsLiking(true);
     try {
-      const res = await fetch(`/api/mvp/post/${post.id}/like`, { method: 'POST' });
-      if (res.ok) {
-        const data = await res.json();
-        setLikes(data.post.likes);
-        if (onLikeUpdate) {
-          onLikeUpdate(post.id, data.post.likes);
-        }
-      }
+      const data = await apiClient.likePost(post.id);
+      setLikes(data.post.likes);
+      onLikeUpdate?.(post.id, data.post.likes);
     } catch (err) {
       console.error('Failed to like post:', err);
+      toast.error('Failed to like post');
     } finally {
       setIsLiking(false);
     }
@@ -47,17 +45,17 @@ export default function PostCard({ post, onLikeUpdate }: PostCardProps) {
       {/* Author Row */}
       <div className="post-meta-row" style={{ marginBottom: '4px' }}>
         {post.author?.avatar && (
-          <img 
-            src={post.author.avatar} 
-            alt={post.author.name} 
-            style={styles.avatar} 
+          <img
+            src={post.author.avatar}
+            alt={post.author.name}
+            style={styles.avatar}
           />
         )}
         <Link href={`/author/${post.authorId}`} className="author-name">
           {post.author?.name || 'Writer'}
         </Link>
-        <span>•</span>
-        <span>{formattedDate}</span>
+        <span aria-hidden="true">•</span>
+        <time dateTime={new Date(post.createdAt).toISOString()}>{formattedDate}</time>
       </div>
 
       {/* Title & Excerpt */}
@@ -66,33 +64,40 @@ export default function PostCard({ post, onLikeUpdate }: PostCardProps) {
         <p className="post-card-excerpt">{post.excerpt}</p>
       </Link>
 
-      {/* Footer / Interaction Row */}
+      {/* Footer */}
       <div className="post-meta-row" style={{ justifyContent: 'space-between', marginTop: '4px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <span style={styles.readingTime}>{post.readingTime || 3} min read</span>
-          <span>•</span>
-          <span style={styles.readingTime}><Eye size={14} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} /> {post.views} views</span>
-          <span>•</span>
+          <span aria-hidden="true">•</span>
+          <span style={styles.readingTime}>
+            <Eye size={14} aria-hidden="true" style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
+            <span className="sr-only">Views: </span>{post.views}
+          </span>
           {post.rpmReal !== undefined && post.rpmReal > 0 && (
-            <span style={styles.rpmBadge}>${post.rpmReal.toFixed(2)} RPM</span>
+            <>
+              <span aria-hidden="true">•</span>
+              <span style={styles.rpmBadge}>${post.rpmReal.toFixed(2)} RPM</span>
+            </>
           )}
-          {post.tags && post.tags.length > 0 && post.tags.map((tag: any) => (
-            <Link key={tag.name || tag} href={`/tag/${tag.name || tag}`} className="tag-pill">
-              {tag.name || tag}
-            </Link>
-          ))}
+          {post.tags && post.tags.length > 0 && (post.tags as Array<string | { name: string }>).map((tag) => {
+            const tagName = typeof tag === 'string' ? tag : tag.name;
+            return (
+              <Link key={tagName} href={`/tag/${tagName}`} className="tag-pill">
+                {tagName}
+              </Link>
+            );
+          })}
         </div>
 
-        <button 
-          onClick={handleLike} 
-          disabled={isLiking} 
-          style={{
-            ...styles.likeBtn,
-            color: likes > post.likes ? 'var(--primary-color)' : 'var(--text-secondary)'
-          }}
-          title="Like this post"
+        <button
+          onClick={handleLike}
+          disabled={isLiking}
+          style={styles.likeBtn}
+          aria-label={`Like this post (${likes} likes)`}
+          aria-pressed={false}
         >
-          <ThumbsUp size={16} /> <span style={{ fontWeight: 600, marginLeft: '4px' }}>{likes}</span>
+          <ThumbsUp size={16} aria-hidden="true" />
+          <span style={{ fontWeight: 600, marginLeft: '4px' }}>{likes}</span>
         </button>
       </div>
     </article>
@@ -115,6 +120,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     cursor: 'pointer',
     fontSize: '14px',
+    color: 'var(--text-secondary)',
     display: 'inline-flex',
     alignItems: 'center',
     padding: '4px 8px',

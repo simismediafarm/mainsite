@@ -1,44 +1,67 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
+import { apiClient } from '../lib/api-client';
 
 export default function CreatePost() {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim()) return;
+    const trimmed = content.trim();
 
+    if (!trimmed) {
+      setError('Post content cannot be empty.');
+      return;
+    }
+    if (trimmed.length < 10) {
+      setError('Post must be at least 10 characters.');
+      return;
+    }
+
+    setError(null);
     setLoading(true);
     try {
-      await fetch('/api/mvp/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content,
-          authorId: 'guest-user', // Hardcoded for MVP simple flow
-        }),
+      await apiClient.createPost({
+        content: trimmed,
+        authorId: 'guest-user', // TODO: replace with session user id
       });
       setContent('');
+      toast.success('Post published!');
     } catch (err) {
-      console.error('Failed to post', err);
+      const message = err instanceof Error ? err.message : 'Failed to create post';
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} style={styles.form} className="glass-container">
+    <form onSubmit={handleSubmit} className="glass-container" style={styles.form}>
       <textarea
         style={styles.textarea}
         placeholder="What's on your mind? Higher quality posts get higher trust scores..."
         value={content}
         onChange={(e) => setContent(e.target.value)}
         disabled={loading}
+        aria-label="Post content"
+        aria-required="true"
       />
+      {error && (
+        <p role="alert" style={styles.errorText}>{error}</p>
+      )}
       <div style={styles.footer}>
-        <button type="submit" disabled={loading || !content.trim()} style={styles.button}>
+        <span style={styles.charCount}>{content.length} chars</span>
+        <button
+          type="submit"
+          disabled={loading || !content.trim()}
+          style={styles.button}
+          aria-busy={loading}
+        >
           {loading ? 'Posting...' : 'Post'}
         </button>
       </div>
@@ -69,9 +92,19 @@ const styles: Record<string, React.CSSProperties> = {
     resize: 'vertical',
     fontFamily: 'inherit',
   },
+  errorText: {
+    color: 'hsl(0, 70%, 55%)',
+    fontSize: '13px',
+    margin: 0,
+  },
   footer: {
     display: 'flex',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  charCount: {
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
   },
   button: {
     background: 'var(--primary)',
