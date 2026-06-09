@@ -6,6 +6,7 @@ export function middleware(req: NextRequest) {
 
   if (basicAuth) {
     const authValue = basicAuth.split(' ')[1];
+    if (!authValue) return new NextResponse('Authentication Required', { status: 401, headers: { 'WWW-Authenticate': 'Basic realm="SIMIS Secure Area"' } });
     const [user, pwd] = atob(authValue).split(':');
     const validUser = process.env.ADMIN_BASIC_AUTH_USER || 'admin';
     const validPass = process.env.ADMIN_BASIC_AUTH_PASSWORD;

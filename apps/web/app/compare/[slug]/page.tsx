@@ -78,7 +78,8 @@ export default function ComparePage() {
   // Try to use defined products metadata, otherwise infer from the first row's keys
   let products: ProductMeta[] = content.metadata?.products || [];
   if (products.length === 0 && rows.length > 0) {
-    const keys = Object.keys(rows[0]).filter(k => k !== 'feature');
+    const firstRow = rows[0];
+    const keys = firstRow ? Object.keys(firstRow).filter(k => k !== 'feature') : [];
     products = keys.map(k => ({
       id: k,
       name: k.replace(/_/g, ' ').toUpperCase()

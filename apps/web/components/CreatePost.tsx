@@ -2,12 +2,24 @@
 
 import React, { useState } from 'react';
 import { toast } from 'sonner';
+import { createClient } from '@supabase/supabase-js';
 import { apiClient } from '../lib/api-client';
+import { env } from '../lib/env';
+
+function useCurrentUserId(): string | null {
+  const [userId, setUserId] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+  }, []);
+  return userId;
+}
 
 export default function CreatePost() {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const userId = useCurrentUserId();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,9 +37,13 @@ export default function CreatePost() {
     setError(null);
     setLoading(true);
     try {
+      if (!userId) {
+        setError('You must be logged in to post.');
+        return;
+      }
       await apiClient.createPost({
         content: trimmed,
-        authorId: 'guest-user', // TODO: replace with session user id
+        authorId: userId,
       });
       setContent('');
       toast.success('Post published!');

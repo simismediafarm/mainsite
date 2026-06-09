@@ -77,7 +77,7 @@ export const store: MigrationStateStore = {
 
   async list(): Promise<EndpointMigrationState[]> {
     const records = await prisma.migrationState.findMany();
-    return records.map(record => ({
+    return records.map((record: (typeof records)[number]) => ({
       endpoint: record.endpoint,
       v1TrafficRatio: record.v1TrafficRatio,
       v2TrafficRatio: record.v2TrafficRatio,

@@ -50,9 +50,11 @@ export default async function AuthorPage({ params }: PageProps) {
   const latestPosts = posts.filter(p => p.status !== 'featured');
 
   if (pinnedPosts.length === 0 && posts.length > 0) {
-    // If no featured, just pin the first one
-    pinnedPosts.push(posts[0]);
-    latestPosts.shift();
+    const first = posts[0];
+    if (first) {
+      pinnedPosts.push(first);
+      latestPosts.shift();
+    }
   }
 
   return (

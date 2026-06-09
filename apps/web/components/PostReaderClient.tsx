@@ -113,7 +113,7 @@ export default function PostReaderClient({ initialPost, initialMonetization }: P
     setIsLiking(true);
     try {
       const data = await apiClient.likePost(post.id);
-      setPost((prev) => ({ ...prev, likes: data.post.likes }));
+      setPost((prev) => ({ ...prev, likes: Number(data.post.likes) }));
     } catch (err) {
       console.error('Failed to like post:', err);
       toast.error('Failed to like post');

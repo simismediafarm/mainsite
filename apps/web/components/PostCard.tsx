@@ -24,8 +24,9 @@ export default function PostCard({ post, onLikeUpdate }: PostCardProps) {
     setIsLiking(true);
     try {
       const data = await apiClient.likePost(post.id);
-      setLikes(data.post.likes);
-      onLikeUpdate?.(post.id, data.post.likes);
+      const newLikes = Number(data.post.likes);
+      setLikes(newLikes);
+      onLikeUpdate?.(post.id, newLikes);
     } catch (err) {
       console.error('Failed to like post:', err);
       toast.error('Failed to like post');

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Post, SSEEvent } from '@simis/shared';
 import PostCard from './PostCard';
@@ -11,12 +11,16 @@ interface FeedProps {
   initialPosts: Post[];
 }
 
-// Static fallback tags — replace with API call when endpoint is available
-const FALLBACK_TRENDING_TAGS = ['Engineering', 'Design', 'UX', 'Typography', 'Tech', 'Startups'];
-
 export default function Feed({ initialPosts }: FeedProps) {
   const [posts, setPosts] = useState<Post[]>(initialPosts);
   const [visibleCount, setVisibleCount] = useState(5);
+  const [trendingTags, setTrendingTags] = useState<string[]>([]);
+
+  useEffect(() => {
+    apiClient.getTrendingTags().then(({ tags }) => {
+      if (tags.length > 0) setTrendingTags(tags);
+    });
+  }, []);
 
   const fetchFeed = async () => {
     try {
@@ -74,7 +78,7 @@ export default function Feed({ initialPosts }: FeedProps) {
       <nav aria-label="Trending tags" style={styles.trendingSection}>
         <span style={styles.trendingLabel}>Trending:</span>
         <div style={styles.tagsContainer}>
-          {FALLBACK_TRENDING_TAGS.map((tag) => (
+          {trendingTags.map((tag) => (
             <Link key={tag} href={`/tag/${tag}`} className="tag-pill">
               #{tag}
             </Link>

@@ -6,6 +6,32 @@ import { SIMISCommandInputSchema, SIMISCommand } from '@simis/shared';
 import { QueueDispatcherService } from '../../services/admin/queue-dispatcher';
 import { prisma } from '../../prisma';
 
+// SEC-002: Typed scope schemas per command type — prevents unsanitized scope payloads
+const ScopeSchemas: Partial<Record<string, z.ZodTypeAny>> = {
+  'QUEUE.REPLAY':          z.object({ jobId: z.string().min(1) }),
+  'QUEUE.PAUSE':           z.object({ queue: z.string().optional() }),
+  'QUEUE.RESUME':          z.object({ queue: z.string().optional() }),
+  'CACHE.INVALIDATE':      z.object({ pattern: z.string().optional(), key: z.string().optional() }),
+  'CACHE.WARMUP':          z.object({ target: z.string().optional() }),
+  'CRAWLER.TRIGGER':       z.object({ sourceId: z.string().optional(), sourceUrl: z.string().url().optional() }),
+  'ENTITY.REPROCESS':      z.object({ entityId: z.string().optional() }),
+  'ATTENTION.RECALCULATE': z.object({ userId: z.string().optional() }),
+  'SYSTEM.HEALTHCHECK':    z.object({}),
+  'TRACE.EXPORT':          z.object({ traceId: z.string().min(1) }),
+  'CONTENT.BULK.REPROCESS':z.object({ ids: z.array(z.string()).min(1).max(500) }),
+  'CONTENT.BULK.PUBLISH':  z.object({ ids: z.array(z.string()).min(1).max(500) }),
+};
+
+function validateScope(type: string, scope: unknown): { ok: true; data: unknown } | { ok: false; error: string } {
+  const schema = ScopeSchemas[type];
+  if (!schema) return { ok: true, data: scope }; // no strict schema defined — allow passthrough
+  const result = schema.safeParse(scope);
+  if (!result.success) {
+    return { ok: false, error: result.error.issues.map((e: { path: (string|number)[]; message: string }) => `scope.${e.path.join('.')}: ${e.message}`).join('; ') };
+  }
+  return { ok: true, data: result.data };
+}
+
 export const adminCommandRouter = new Hono();
 
 adminCommandRouter.post('/', async (c) => {
@@ -25,12 +51,19 @@ adminCommandRouter.post('/', async (c) => {
     const timestamp = commandInput.timestamp || Date.now();
     const commandId = commandInput.id || `cmd_${uuidv4()}`;
 
+    // 2b. Validate scope payload per command type (SEC-002)
+    const scopeValidation = validateScope(commandInput.type, commandInput.scope);
+    if (!scopeValidation.ok) {
+      return c.json({ error: 'Invalid scope payload', details: scopeValidation.error }, 400);
+    }
+
     const command: SIMISCommand = {
       ...commandInput,
       id: commandId,
       traceId,
       timestamp,
       priority: commandInput.priority || 'standard',
+      scope: scopeValidation.data as Record<string, unknown>,
     };
 
     // 3. Handle Bulk Operations explicitly

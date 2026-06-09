@@ -77,7 +77,7 @@ describe("ArtifactResolver Concurrency & SWR", () => {
 
     // Assert that all 10000 requests got a valid result
     expect(results.length).toBe(10000);
-    expect(results[0].cssVariables["--color"]).toBe("red");
+    expect(results[0]?.cssVariables["--color"]).toBe("red");
 
     // Assert that the loader was only called ONCE
     expect(ArtifactLoader.load).toHaveBeenCalledTimes(1);
