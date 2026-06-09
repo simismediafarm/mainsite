@@ -1,23 +1,31 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  // Lazy-initialized: only created in the browser, never during SSR/prerender
+  const supabaseRef = useRef<SupabaseClient | null>(null);
+  const getSupabase = () => {
+    if (!supabaseRef.current) {
+      supabaseRef.current = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+    }
+    return supabaseRef.current;
+  };
 
   const handleOAuthSignIn = async (provider: "google" | "github") => {
     setLoading(true);
     setMessage("");
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { error } = await getSupabase().auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: window.location.origin + "/admin/overview",
@@ -35,7 +43,7 @@ export default function LoginPage() {
     setLoading(true);
     setMessage("");
     try {
-      const { error } = await supabase.auth.signInWithOtp({
+      const { error } = await getSupabase().auth.signInWithOtp({
         email,
         options: {
           emailRedirectTo: window.location.origin + "/admin/overview",

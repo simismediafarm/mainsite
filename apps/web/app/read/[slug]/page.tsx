@@ -53,12 +53,24 @@ export async function generateMetadata(
 export default async function ArticlePage({ params }: Props) {
   const { slug } = await params;
   let content = null;
+  let monetization = null;
+
+  const apiBase = process.env.NEXT_PUBLIC_KERNEL_API_URL || (process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : 'http://127.0.0.1:4000');
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_KERNEL_API_URL || (process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : 'http://127.0.0.1:4000')}/api/mvp/content/${slug}`, { cache: 'no-store' });
-    if (res.ok) {
-      const data = await res.json();
+    const [contentRes, monetizationRes] = await Promise.allSettled([
+      fetch(`${apiBase}/api/mvp/content/${slug}`, { cache: 'no-store' }),
+      fetch(`${apiBase}/api/mvp/monetization/policy/${slug}`, { cache: 'no-store' }),
+    ]);
+
+    if (contentRes.status === 'fulfilled' && contentRes.value.ok) {
+      const data = await contentRes.value.json();
       if (!data.error) content = data;
+    }
+
+    if (monetizationRes.status === 'fulfilled' && monetizationRes.value.ok) {
+      const data = await monetizationRes.value.json();
+      if (!data.error) monetization = data;
     }
   } catch (err) {
     console.error('Failed to fetch article content', err);
@@ -100,7 +112,7 @@ export default async function ArticlePage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdArticle) }}
       />
-      <PostReaderClient initialPost={content} />
+      <PostReaderClient initialPost={content} initialMonetization={monetization ?? undefined} />
     </>
   );
 }

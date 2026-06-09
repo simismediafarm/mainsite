@@ -70,6 +70,6 @@ export async function promote_to_production(
 export async function trigger_auto_rollback(
   snapshotName: string
 ): Promise<void> {
-  console.warn(`AUTOMATIC ROLLBACK TRIGGERED: Restoring database snapshot to '${snapshotName}'...`);
+  console.warn(`AUTOMATIC ROLLBACK INITIATED: Restoring database snapshot to '${snapshotName}'...`);
   // Snapshot recovery procedures go here
 }

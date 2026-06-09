@@ -22,7 +22,7 @@ export async function updateDeploymentState(state: DeploymentState) {
 
 export async function executeRollbackAction(action: string, ruleId: string, payload: any) {
   if (action === "ROLLBACK") {
-    console.error(`[ROLLBACK TRIGGERED] Rule: ${ruleId}`, payload);
+    console.error(`[ROLLBACK EXECUTING] Rule: ${ruleId}`, payload);
     await switchTraffic("v1");
     await invalidateCache();
     await updateDeploymentState(DeploymentState.EMERGENCY_ROLLBACK);
