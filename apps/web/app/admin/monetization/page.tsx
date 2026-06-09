@@ -1,24 +1,18 @@
 "use client";
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { adminStyles } from '../adminStyles';
-import { API_BASE } from '../../../lib/kernel-api';
+import { fetchKernelApi } from '../../../lib/kernel-api';
 
 export default function MonetizationPanel() {
   const [rpmEstimate, setRpmEstimate] = useState<number | null>(null);
   const [params, setParams] = useState({ ctr: 0.02, dwell: 15, geo: 'US' });
 
   const handleSimulate = () => {
-    fetch(`${API_BASE}/api/v2/admin/revenue/simulate`, { 
+    fetchKernelApi('/api/v2/admin/revenue/simulate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        ctr: params.ctr, 
-        dwell_time_seconds: params.dwell, 
-        geo: params.geo 
-      })
+      body: JSON.stringify({ ctr: params.ctr, dwell_time_seconds: params.dwell, geo: params.geo }),
     })
-      .then(res => res.json())
       .then(data => setRpmEstimate(data.expected_rpm))
       .catch(() => setRpmEstimate(null));
   };

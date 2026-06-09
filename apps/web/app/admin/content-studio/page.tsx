@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SIMISCommand } from '@simis/shared';
+import { fetchKernelApi, API_BASE } from '../../../lib/kernel-api';
 
 export default function ContentStudio() {
   const [posts, setPosts] = useState<any[]>([]);
@@ -9,43 +10,29 @@ export default function ContentStudio() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    fetch('/api/mvp/feed')
+    fetch(`${API_BASE}/api/mvp/feed`)
       .then(res => res.json())
-      .then(data => {
-        setPosts(data.posts || []);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+      .then(data => { setPosts(data.posts || []); setLoading(false); })
+      .catch(() => setLoading(false));
   }, []);
 
   const handleBulkAction = async (action: string) => {
     if (selectedIds.size === 0) return;
-    
     const command: Partial<SIMISCommand> = {
-      actor: 'admin', // Will be overridden by backend auth
+      actor: 'admin',
       source: 'web',
       type: `CONTENT.BULK.${action.toUpperCase()}` as any,
       scope: { ids: Array.from(selectedIds) },
-      mode: 'execute'
+      mode: 'execute',
     };
-
     try {
-      const res = await fetch('/api/admin/command', {
+      const result = await fetchKernelApi('/api/admin/command', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(command)
+        body: JSON.stringify(command),
       });
-      const result = await res.json();
-      if (result.traceId) {
-        alert(`Bulk action ${action} queued successfully. Trace ID: ${result.traceId}`);
-      } else {
-        alert('Failed to dispatch command.');
-      }
-    } catch (err) {
-      alert('Error dispatching command.');
+      alert(result.traceId ? `Queued. Trace: ${result.traceId}` : 'Failed to dispatch.');
+    } catch (err: any) {
+      alert(err.message || 'Error dispatching command.');
     }
   };
 

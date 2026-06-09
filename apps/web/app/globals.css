@@ -74,6 +74,15 @@
     --font-mono: var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
     --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+    /* Radius tokens (mirroring @theme for use in JS/inline styles) */
+    --radius-lg: 0.5rem;
+    --radius-md: 0.375rem;
+    --radius-sm: 0.25rem;
+
+    /* Admin/dashboard surface tokens */
+    --deal-green: #32D74B;
+    --surface-border: #2a2a2a;
   }
 
   .dark,
@@ -110,6 +119,15 @@
     --quote-border: #f5f5f5;
     --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.2);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+    /* Radius tokens */
+    --radius-lg: 0.5rem;
+    --radius-md: 0.375rem;
+    --radius-sm: 0.25rem;
+
+    /* Admin/dashboard surface tokens */
+    --deal-green: #32D74B;
+    --surface-border: #2a2a2a;
   }
 
   * {
@@ -220,3 +238,20 @@ a.underline-link:hover { color: var(--primary-color); }
 
 .progress-bar-container { position: fixed; top: 0; left: 0; width: 100%; height: 3px; z-index: 1000; background: transparent; }
 .progress-bar { height: 100%; background: var(--primary-color); width: 0%; transition: width 0.1s ease-out; }
+
+/* ============================================================
+   Admin / Dashboard Utility Classes
+   ============================================================ */
+
+.glass-container {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--surface-border, #2a2a2a);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+[data-theme="dark"] .glass-container,
+.dark .glass-container {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: #2a2a2a;
+}

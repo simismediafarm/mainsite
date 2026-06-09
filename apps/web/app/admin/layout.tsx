@@ -8,7 +8,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <AdminSidebar />
 
       {/* Main Content Area */}
-      <main className="flex-1 ml-[280px] flex flex-col min-w-0 bg-[#050505] min-h-screen">
+      <main className="flex-1 ml-[240px] flex flex-col min-w-0 bg-[#050505] min-h-screen">
         <header className="h-14 bg-[#131313] border-b border-[#222222] px-6 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
             <div className="font-sans text-sm font-semibold text-[#e5e2e1]">Network Control</div>
