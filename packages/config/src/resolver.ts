@@ -298,19 +298,26 @@ export function getRedisConfig() {
 
 export function createRedisClient(customOptions?: any): IORedis {
   const config = getRedisConfig();
+  let client: IORedis;
   if ('url' in config && typeof config.url === 'string') {
-    return new IORedis(config.url, {
+    client = new IORedis(config.url, {
       ...config.options,
       ...customOptions
     });
+  } else {
+    const fallbackConfig = config as any;
+    client = new IORedis({
+      host: fallbackConfig.host,
+      port: fallbackConfig.port,
+      password: fallbackConfig.password,
+      maxRetriesPerRequest: fallbackConfig.maxRetriesPerRequest,
+      retryStrategy: fallbackConfig.retryStrategy,
+      ...customOptions
+    });
   }
-  const fallbackConfig = config as any;
-  return new IORedis({
-    host: fallbackConfig.host,
-    port: fallbackConfig.port,
-    password: fallbackConfig.password,
-    maxRetriesPerRequest: fallbackConfig.maxRetriesPerRequest,
-    retryStrategy: fallbackConfig.retryStrategy,
-    ...customOptions
+  // Prevent unhandled error event from crashing the process when Redis is unavailable
+  client.on('error', (err) => {
+    console.warn('[Redis] Connection error (non-fatal):', err.message);
   });
+  return client;
 }
