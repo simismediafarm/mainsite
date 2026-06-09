@@ -27,7 +27,7 @@ function validateScope(type: string, scope: unknown): { ok: true; data: unknown 
   if (!schema) return { ok: true, data: scope }; // no strict schema defined — allow passthrough
   const result = schema.safeParse(scope);
   if (!result.success) {
-    return { ok: false, error: result.error.issues.map((e: { path: (string|number)[]; message: string }) => `scope.${e.path.join('.')}: ${e.message}`).join('; ') };
+    return { ok: false, error: result.error.issues.map(e => `scope.${e.path.map(String).join('.')}: ${e.message}`).join('; ') };
   }
   return { ok: true, data: result.data };
 }
