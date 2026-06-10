@@ -1,5 +1,6 @@
 import { MonetizationExecutor, MonetizationTarget } from './monetization_executor';
 import { RiskEngine } from './risk_engine';
+import { prisma } from '../prisma';
 
 export interface FeedPayload {
   sourceId: string;
@@ -43,9 +44,17 @@ export class FeedCompiler {
       };
       
       await MonetizationExecutor.execute(monetizationTarget);
-      
-      // Step 4: Persist to DB (Mocked here)
-      console.log(`[FeedCompiler] Item ${item.id} successfully compiled and persisted.`);
+
+      // Step 4: Persist compiled item to DB
+      await prisma.eventQueueLog.create({
+        data: {
+          id: `feed_${item.id}_${Date.now()}`,
+          traceId: `feed_${payload.sourceId}`,
+          eventType: 'FEED.COMPILED',
+          payload: { sourceId: payload.sourceId, itemId: item.id, tags: item.tags, url: item.url },
+          status: 'COMPLETED',
+        }
+      });
       valid++;
     }
 

@@ -1,3 +1,5 @@
+import { prisma } from '../../../prisma';
+
 export interface IntegritySignal {
   type: string;
   rawValue: number;
@@ -5,16 +7,22 @@ export interface IntegritySignal {
 }
 
 export class EngagementSignalResolver {
-  /**
-   * Resolves raw engagement metrics: views, engagements, bounce, etc.
-   */
   public async resolve(entityId: string): Promise<IntegritySignal[]> {
-    // MOCK: Fetch from ContentMetric
+    const post = await prisma.post.findUnique({
+      where: { id: entityId },
+      select: { views: true, likes: true, clicks: true, ctr: true, metrics: true },
+    });
+
+    if (!post) return [];
+
     return [
-      { type: 'views', rawValue: 1000 },
-      { type: 'engagements', rawValue: 150 },
-      { type: 'comments', rawValue: 12 },
-      { type: 'shares', rawValue: 5 }
+      { type: 'views', rawValue: post.views },
+      { type: 'engagements', rawValue: post.likes + post.clicks },
+      { type: 'comments', rawValue: 0 }, // no comments model yet
+      { type: 'shares', rawValue: post.clicks },
+      { type: 'ctr', rawValue: post.ctr },
+      { type: 'bounceRate', rawValue: post.metrics?.bounceRate ?? 0 },
+      { type: 'returningUsers', rawValue: post.metrics?.returningUsers ?? 0 },
     ];
   }
 }

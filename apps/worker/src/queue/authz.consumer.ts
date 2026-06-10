@@ -73,13 +73,15 @@ export async function processAuthzJob(job: Job<SIMISCommand>) {
 // Helpers
 
 function resolveRoleDeterministic(actor: string, source: string, actorContext?: any): string {
-  // In a real implementation, this checks verified token scopes or app_metadata cache.
-  // For the simulation / v3.3 blueprint:
+  // Role must come from server-verified app_metadata (set by Supabase auth admin).
+  // actorContext.role is populated by the API layer from user.app_metadata?.role before enqueue.
   if (source === 'cli' && actor === 'simis_cli_admin') return 'admin';
-  if (actor === 'mock_editor') return 'editor';
-  if (actor === 'mock_author') return 'author';
-  
-  // Default fallback
+
+  const role = actorContext?.role as string | undefined;
+  const validRoles = ['visitor', 'contributor', 'author', 'editor', 'publisher', 'admin'];
+  if (role && validRoles.includes(role)) return role;
+
+  // Default: deny all — safe fallback
   return 'visitor';
 }
 

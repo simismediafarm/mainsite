@@ -1,7 +1,9 @@
 import { Hono } from 'hono';
-import { generateEmbedding } from '../../services/personalization';
+import { AIOrchestrator } from '../../services/ai/ai_orchestrator';
 
 export const intelligenceV2Router = new Hono();
+
+const orchestrator = new AIOrchestrator();
 
 // ── POST /analyze -> Content Semantic Analysis ─────────────────────────────
 intelligenceV2Router.post('/analyze', async (c) => {
@@ -11,19 +13,27 @@ intelligenceV2Router.post('/analyze', async (c) => {
       return c.json({ error: 'Text payload is required for analysis' }, 400);
     }
 
-    // Generate vector embedding for semantic search / caching
-    const vector = await generateEmbedding(body.text);
-    
-    // In a real V2 implementation, we would route this to an LLM provider via the kernel
-    // For now, we return the dimensionality of the vector as proof of intelligence processing
-    return c.json({ 
-      success: true, 
+    const result = await orchestrator.enrichContent(body.text);
+
+    return c.json({
+      success: true,
       analysis: {
-        vector_dimensions: vector.length,
-        sentiment_prediction: 'neutral', // placeholder
-        intent_category: 'informational' // placeholder
-      } 
+        result,
+        model: 'simis-sik-fallback-hierarchy',
+      },
     });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
+// ── POST /enrich -> alias used by llm-client in worker ────────────────────
+intelligenceV2Router.post('/enrich', async (c) => {
+  try {
+    const body = await c.req.json();
+    if (!body.text) return c.json({ error: 'text required' }, 400);
+    const result = await orchestrator.enrichContent(body.text);
+    return c.json({ result });
   } catch (err: any) {
     return c.json({ error: err.message }, 500);
   }

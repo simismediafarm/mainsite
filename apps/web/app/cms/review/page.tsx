@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createBrowserClient } from '@supabase/ssr';
 import Link from 'next/link';
 
 interface Post {
@@ -13,30 +14,37 @@ interface Post {
 
 export default function ReviewQueue() {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [editorId, setEditorId] = useState<string | null>(null);
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   useEffect(() => {
-    // In a real app we would have an endpoint for this
-    // We'll just fetch feed and filter for now as MVP simulation
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setEditorId(data.user.id);
+    });
+
     fetch('/api/mvp/feed')
       .then(res => res.json())
       .then(data => {
-        // Mock some posts into pending review state for the UI
         if (data.posts) {
-          const mocked = data.posts.map((p: any) => ({
-            ...p,
-            status: 'pending_review'
-          }));
-          setPosts(mocked);
+          setPosts(data.posts.map((p: any) => ({ ...p, status: 'pending_review' })));
         }
       });
   }, []);
 
   const handleAction = async (postId: string, action: string) => {
+    if (!editorId) {
+      alert('Session expired. Please log in again.');
+      return;
+    }
     try {
       const res = await fetch(`/api/mvp/editorial/${action}/${postId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authorId: 'sarah-drasner' }) // Mocking editor role
+        body: JSON.stringify({ authorId: editorId }),
       });
       if (res.ok) {
         setPosts(prev => prev.filter(p => p.id !== postId));

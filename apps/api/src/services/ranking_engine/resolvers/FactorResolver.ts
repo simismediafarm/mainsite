@@ -29,19 +29,38 @@ export class FactorResolver {
 
     const resolved: ResolvedFactor[] = [];
 
-    // MOCK RAW DATA FETCHING FOR SIMIS OS CONTRACT
-    // This is where we'd batch-query `Post`, `ContentMetric`, etc.
-    const mockRawScores: Record<string, number> = {
-      'authority': 75,
-      'freshness': 12,
-      'engagement': 450,
-      'commercialIntent': 10
+    // Batch-fetch post metrics for real signal data
+    const post = await this.prisma.post.findUnique({
+      where: { id: entityId },
+      select: {
+        trustScore: true,
+        views: true,
+        likes: true,
+        clicks: true,
+        rankingScore: true,
+        attentionScore: true,
+        commercialIntentScore: true,
+        createdAt: true,
+      },
+    });
+
+    const ageHours = post
+      ? (Date.now() - post.createdAt.getTime()) / 3_600_000
+      : 0;
+
+    const liveScores: Record<string, number> = {
+      authority: post?.trustScore ?? 0,
+      freshness: post ? Math.max(0, 168 - ageHours) : 0, // decay over 168h
+      engagement: post ? post.views + post.likes + post.clicks : 0,
+      commercialIntent: post?.commercialIntentScore ?? 0,
+      ranking: post?.rankingScore ?? 0,
+      attention: post?.attentionScore ?? 0,
     };
 
     for (const meta of metadataRecords) {
       resolved.push({
         slug: meta.slug,
-        rawValue: mockRawScores[meta.slug] || 0,
+        rawValue: liveScores[meta.slug] ?? 0,
         metadata: {
           id: meta.id,
           slug: meta.slug,
@@ -49,8 +68,8 @@ export class FactorResolver {
           minValue: meta.minValue,
           maxValue: meta.maxValue,
           defaultWeight: meta.defaultWeight,
-          normalizationMethod: meta.normalizationMethod
-        }
+          normalizationMethod: meta.normalizationMethod,
+        },
       });
     }
 

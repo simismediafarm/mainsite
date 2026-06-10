@@ -28,28 +28,21 @@ export class RevenueRuleResolver {
    * If an active experiment is running, it returns the variant rules.
    */
   public async resolve(context: string, workspaceId?: string): Promise<{ ruleId: string, definition: RevenueRuleDefinition }[]> {
-    // In reality, this queries the DB for active RevenueRules by context and checks for active RevenueExperiments.
-    // For now, we mock the DB fetch as an example of the DSL contract.
-    const rules: RevenueRuleDefinition[] = [
-      {
-        operator: 'AND',
-        conditions: [
-          { field: 'integrityScore', comparison: 'gte', value: 0.7 },
-          { field: 'rankingScore', comparison: 'gte', value: 0.6 }
-        ],
-        action: { type: 'multiplier', value: 1.2 },
-        priority: 10
-      },
-      {
-        operator: 'AND',
-        conditions: [
-          { field: 'integrityScore', comparison: 'lt', value: 0.4 }
-        ],
-        action: { type: 'deny', value: 0 },
-        priority: 100
-      }
-    ];
+    const where: any = { isActive: true };
+    if (workspaceId) where.workspaceId = workspaceId;
 
-    return rules.map((r, i) => ({ ruleId: `rule-${i}`, definition: r }));
+    const dbRules = await this.prisma.revenueRule.findMany({
+      where,
+      orderBy: { priority: 'desc' },
+    });
+
+    return dbRules.map(r => ({
+      ruleId: r.id,
+      definition: {
+        ...(r.condition as any),
+        action: r.action as RevenueRuleDefinition['action'],
+        priority: r.priority,
+      } as RevenueRuleDefinition,
+    }));
   }
 }

@@ -1,15 +1,19 @@
+import { prisma } from '../../../prisma';
 import { IntegritySignal } from './EngagementSignalResolver';
 
 export class SessionSignalResolver {
-  /**
-   * Resolves raw session metrics: scroll depth, time on page, etc.
-   */
   public async resolve(entityId: string): Promise<IntegritySignal[]> {
-    // MOCK: Fetch from SessionMetric
+    const metric = await prisma.contentMetric.findUnique({
+      where: { postId: entityId },
+    });
+
+    if (!metric) return [];
+
     return [
-      { type: 'avgTimeOnPageSecs', rawValue: 120 },
-      { type: 'avgScrollDepthPct', rawValue: 65 },
-      { type: 'sessionDurationSecs', rawValue: 300 }
+      { type: 'avgTimeOnPageSecs', rawValue: metric.timeOnPageAvg },
+      { type: 'avgScrollDepthPct', rawValue: metric.sessionDepthAvg },
+      { type: 'bounceRate', rawValue: metric.bounceRate },
+      { type: 'returningUsers', rawValue: metric.returningUsers },
     ];
   }
 }

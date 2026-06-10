@@ -91,9 +91,18 @@ export async function processCommandJob(job: Job<SIMISCommand>) {
 
 async function handleQueueReplay(scope: any) {
   const { jobId } = scope;
-  // TODO: BullMQ getJob + retry logic
-  console.log(`[QueueReplay] Replaying job ${jobId}`);
-  return { replayed: jobId };
+  if (!jobId) throw new Error('handleQueueReplay: jobId required');
+
+  // Find the original event and re-enqueue with status QUEUED
+  const event = await prisma.eventQueueLog.findUnique({ where: { id: jobId } });
+  if (!event) throw new Error(`handleQueueReplay: event ${jobId} not found`);
+
+  await prisma.eventQueueLog.update({
+    where: { id: jobId },
+    data: { status: 'QUEUED' },
+  });
+
+  return { replayed: jobId, previousStatus: event.status };
 }
 
 async function handleCacheInvalidate(scope: any) {
@@ -110,15 +119,47 @@ async function handleCacheInvalidate(scope: any) {
 
 async function handleCrawlerTrigger(scope: any) {
   const { sourceId } = scope;
-  console.log(`[CrawlerTrigger] Enqueuing crawl for sourceId: ${sourceId}`);
-  // TODO: delegate to ingestion service
+  if (!sourceId) throw new Error('handleCrawlerTrigger: sourceId required');
+
+  // Log a crawl-requested event — the crawler mesh picks this up via EventQueueLog polling
+  await prisma.eventQueueLog.create({
+    data: {
+      id: `crawl_${sourceId}_${Date.now()}`,
+      traceId: `crawl_${sourceId}`,
+      eventType: 'CRAWLER.REQUESTED',
+      payload: { sourceId },
+      status: 'QUEUED',
+    },
+  });
+
   return { triggered: sourceId };
 }
 
 async function handleEntityReprocess(scope: any) {
   const { entityId } = scope;
-  console.log(`[EntityReprocess] Re-running entity OS for entityId: ${entityId}`);
-  // TODO: call EntityOrchestrator
+  if (!entityId) throw new Error('handleEntityReprocess: entityId required');
+
+  // Reset entity intelligence scores to trigger recalculation pipeline
+  await prisma.intelligenceSnapshot.updateMany({
+    where: { entityId },
+    data: {
+      compositeIntelligenceScore: 0,
+      rankingScore: 0,
+      integrityScore: 0,
+    },
+  });
+
+  // Log reprocess event
+  await prisma.eventQueueLog.create({
+    data: {
+      id: `reprocess_${entityId}_${Date.now()}`,
+      traceId: `reprocess_${entityId}`,
+      eventType: 'ENTITY.REPROCESS.REQUESTED',
+      payload: { entityId },
+      status: 'QUEUED',
+    },
+  });
+
   return { reprocessed: entityId };
 }
 
