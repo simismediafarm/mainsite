@@ -26,6 +26,7 @@ import { LinkGraphEngine } from '../services/seo/link_graph_engine';
 import { CannibalizationDetector } from '../services/seo/cannibalization_detector';
 import { IndexingClient } from '../services/seo/indexing_client';
 
+import { getSupabase } from '@simis/kernel-graph/dist/executor/kernelExecutor';
 import registryV2Router from './v2/registry';
 import intelligenceV2Router from './v2/intelligence';
 
