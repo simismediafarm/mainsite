@@ -16,6 +16,7 @@ const navGroups = [
   {
     label: 'Content',
     items: [
+      { label: 'All Posts', href: '/admin/posts', icon: 'article' },
       { label: 'Content Studio', href: '/admin/content-studio', icon: 'inventory_2' },
       { label: 'CMS Review', href: '/admin/cms', icon: 'edit_note' },
       { label: 'Create Post', href: '/create', icon: 'add_circle' },

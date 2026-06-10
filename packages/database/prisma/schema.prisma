@@ -190,6 +190,7 @@ model Post {
   cpmReal      Float @default(0.0)
   revenueTotal Float @default(0.0)
 
+  readingTime           Int    @default(3)
   editorialBoost        Int    @default(0)
   trustScore            Int    @default(50)
   rankingScore          Float?
@@ -1337,4 +1338,19 @@ model RegistryLock {
 
   @@map("registry_locks")
   @@schema("registry")
+}
+
+// ----------------------------------------------------------------------------
+// NEWSLETTER / SUBSCRIBERS
+// ----------------------------------------------------------------------------
+
+model Subscriber {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  status       String    @default("active") // active | unsubscribed
+  confirmedAt  DateTime?
+  subscribedAt DateTime  @default(now())
+  source       String    @default("web") // web | import | api
+
+  @@schema("public")
 }

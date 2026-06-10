@@ -1,27 +1,46 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 
-export function middleware(req: NextRequest) {
-  const basicAuth = req.headers.get('authorization');
+export async function middleware(req: NextRequest) {
+  const res = NextResponse.next();
 
-  if (basicAuth) {
-    const authValue = basicAuth.split(' ')[1];
-    if (!authValue) return new NextResponse('Authentication Required', { status: 401, headers: { 'WWW-Authenticate': 'Basic realm="SIMIS Secure Area"' } });
-    const [user, pwd] = atob(authValue).split(':');
-    const validUser = process.env.ADMIN_BASIC_AUTH_USER || 'admin';
-    const validPass = process.env.ADMIN_BASIC_AUTH_PASSWORD;
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => req.cookies.getAll(),
+        setAll: (cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) => {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            res.cookies.set(name, value, options as Parameters<typeof res.cookies.set>[2])
+          );
+        },
+      },
+    }
+  );
 
-    if (validPass && user === validUser && pwd === validPass) {
-      return NextResponse.next();
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session) {
+    const loginUrl = new URL('/login', req.url);
+    loginUrl.searchParams.set('redirect', req.nextUrl.pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Admin routes: require admin role from app_metadata (server-verified)
+  if (req.nextUrl.pathname.startsWith('/admin')) {
+    const { data: { user } } = await supabase.auth.getUser();
+    const role = user?.app_metadata?.role;
+    const allowedRoles = ['super_admin', 'system_admin', 'admin'];
+    if (!role || !allowedRoles.includes(role)) {
+      return NextResponse.redirect(new URL('/', req.url));
     }
   }
 
-  return new NextResponse('Authentication Required', {
-    status: 401,
-    headers: { 'WWW-Authenticate': 'Basic realm="SIMIS Secure Area"' },
-  });
+  return res;
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/create'],
 };

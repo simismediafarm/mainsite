@@ -99,7 +99,7 @@ export const apiClient = {
 
   // Deals
   getDeals: () =>
-    request(`${env.NEXT_PUBLIC_KERNEL_API_URL}/api/v2/deals`, { schema: DealsResponse }),
+    request('/api/mvp/deals', { schema: DealsResponse }),
 
   // Newsletter
   subscribeNewsletter: (email: string) =>

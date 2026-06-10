@@ -3,7 +3,6 @@
  */
 
 import { Hono } from 'hono';
-import { getSupabase } from '@simis/kernel-graph/dist/executor/kernelExecutor';
 import { prisma } from '../prisma';
 import { runExecutionPipeline, PipelineIntent } from '@simis/kernel-graph/dist/v7.1/runtime/execution_pipeline';
 import { buildContentBlock, ContentBlockV2 } from '../services/block_builder';

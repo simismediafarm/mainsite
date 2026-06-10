@@ -44,6 +44,14 @@ interface V2Asset {
   type: string;
 }
 
+interface Candidate {
+  id: string;
+  title: string;
+  sourceType: string;
+  status: string;
+  createdAt: string;
+}
+
 export default function AdminControlTowerHome() {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [loadingMetrics, setLoadingMetrics] = useState(true);
@@ -52,6 +60,11 @@ export default function AdminControlTowerHome() {
   // V2 Shadow State
   const [v2Assets, setV2Assets] = useState<V2Asset[]>([]);
   const [loadingV2, setLoadingV2] = useState(true);
+
+  // Pending Candidates State
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [candidateCount, setCandidateCount] = useState(0);
+  const [actioning, setActioning] = useState<string | null>(null);
 
   // Execution Mode State
   const [isDryRun, setIsDryRun] = useState(true);
@@ -91,6 +104,18 @@ export default function AdminControlTowerHome() {
       } finally {
         setLoadingV2(false);
       }
+
+      // Pending Content Candidates
+      try {
+        const [statsData, candidatesData] = await Promise.allSettled([
+          fetchKernelApi('/api/admin/posts/stats'),
+          fetchKernelApi('/api/admin/posts/candidates?limit=8'),
+        ]);
+        if (statsData.status === 'fulfilled') setCandidateCount(statsData.value.pendingCandidates ?? 0);
+        if (candidatesData.status === 'fulfilled') setCandidates(candidatesData.value.candidates ?? []);
+      } catch (err) {
+        console.warn('Candidates fetch failed', err);
+      }
     }
 
     loadDashboardData();
@@ -105,6 +130,20 @@ export default function AdminControlTowerHome() {
   const showFeedback = (message: string, isError = false) => {
     setActionFeedback({ message, isError });
     setTimeout(() => setActionFeedback(null), 5000);
+  };
+
+  const handleCandidateAction = async (id: string, action: 'approve' | 'reject') => {
+    setActioning(id);
+    try {
+      await fetchKernelApi(`/api/admin/posts/candidates/${id}/${action}`, { method: 'POST' });
+      setCandidates(prev => prev.filter(c => c.id !== id));
+      setCandidateCount(prev => Math.max(0, prev - 1));
+      showFeedback(`Candidate ${action === 'approve' ? 'approved and moved to review' : 'rejected'}`);
+    } catch (err: any) {
+      showFeedback(`Action failed: ${err.message}`, true);
+    } finally {
+      setActioning(null);
+    }
   };
 
   const handleModeToggle = async () => {
@@ -182,6 +221,53 @@ export default function AdminControlTowerHome() {
         <div className={`p-4 rounded-xl border backdrop-blur-sm ${actionFeedback.isError ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>
           <p className="text-sm font-medium">{actionFeedback.message}</p>
         </div>
+      )}
+
+      {/* PENDING CONTENT CANDIDATES */}
+      {(candidates.length > 0 || candidateCount > 0) && (
+        <section>
+          <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-3">
+            <span className="bg-orange-500 w-1.5 h-5 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.5)]"></span>
+            Pending Content Review
+            <span className="ml-1 px-2 py-0.5 text-xs font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-full">
+              {candidateCount}
+            </span>
+          </h2>
+          <div className="bg-[#0a0a0a] border border-[#222] rounded-2xl overflow-hidden">
+            {candidates.length === 0 ? (
+              <p className="p-6 text-sm text-[#849396]">No candidates queued.</p>
+            ) : (
+              <div className="divide-y divide-[#1a1a1a]">
+                {candidates.map(c => (
+                  <div key={c.id} className="flex items-center justify-between px-5 py-3 hover:bg-[#111] transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white font-medium truncate">{c.title}</p>
+                      <p className="text-xs text-[#849396] mt-0.5 font-mono">
+                        {c.sourceType} · {new Date(c.createdAt).toLocaleDateString('en-GB')}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 ml-4 shrink-0">
+                      <button
+                        disabled={actioning === c.id}
+                        onClick={() => handleCandidateAction(c.id, 'approve')}
+                        className="px-3 py-1 text-xs font-semibold rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 disabled:opacity-50 transition-colors cursor-pointer"
+                      >
+                        {actioning === c.id ? '...' : 'Approve'}
+                      </button>
+                      <button
+                        disabled={actioning === c.id}
+                        onClick={() => handleCandidateAction(c.id, 'reject')}
+                        className="px-3 py-1 text-xs font-semibold rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 disabled:opacity-50 transition-colors cursor-pointer"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
       )}
 
       {/* MODULE 1: System Overview */}

@@ -109,7 +109,6 @@ app.post('/seed', async (c) => {
             authorId: author.id,
             status: 'published',
             trustScore: 85,
-            readingTime: 4,
             tags: {
               connectOrCreate: p.tags.map(t => ({ where: { name: t }, create: { name: t } })),
             },
